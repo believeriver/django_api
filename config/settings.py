@@ -153,6 +153,7 @@ CORS_ALLOWED_ORIGINS = [
     "http://localhost:5173",
 ]
 
+# REST Framework settings
 REST_FRAMEWORK = {
     # 'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
     # 'PAGE_SIZE': 100,
@@ -168,10 +169,56 @@ REST_FRAMEWORK = {
     ],
 }
 
+# Authentication settings for JWT
 SIMPLE_JWT = {
     'AUTH_HEADER_TYPES': ('JWT',),
     'ACCESS_TOKEN_LIFETIME': timedelta(minutes=60),
 }
 
 # AUTH_USER_MODEL = 'api_auth.User'
+
+
+# Logging Configuration
+
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+
+    'formatters': {
+        'standard': {
+            'format': '[%(asctime)s] [%(levelname)s] [%(name)s] %(message)s'
+        },
+    },
+
+    'handlers': {
+        'console': {
+            'level': 'INFO',
+            'class': 'logging.StreamHandler',
+            'formatter': 'standard',
+        },
+    },
+
+    'loggers': {
+        # Django内部
+        'django': {
+            'handlers': ['console'],
+            'level': 'INFO',
+            'propagate': False,
+        },
+
+        # あなたのアプリ
+        'api_market': {
+            'handlers': ['console'],
+            'level': 'INFO',
+            'propagate': False,
+        },
+
+        # collectors
+        'collectors': {
+            'handlers': ['console'],
+            'level': 'INFO',
+            'propagate': False,
+        },
+    }
+}
 # -----------------
