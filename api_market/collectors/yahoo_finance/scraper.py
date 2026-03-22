@@ -2,18 +2,18 @@ import sys
 import os
 import gc
 import math
-import logging
+import json
 
-
-logger = logging.getLogger(__name__)
 
 my_path = os.path.dirname(
     os.path.dirname(os.path.abspath(__file__)))
 sys.path.append(my_path)
-logger.info('Path added to sys.path: {}'.format(my_path))
 
+from common.settings import setup_logger
 from common.base_scraper import IDataSet, IFetchDataFromUrl
 
+logger = setup_logger(name=__name__)
+logger.info('Path added to sys.path: {}'.format(my_path))
 
 class CompanyData(IDataSet):
     def __init__(self):
@@ -92,7 +92,7 @@ def main():
 
     fetch_yahoo_finance = FetchDataFromYahooFinance(1, company_list)
     max_index, update_date = fetch_yahoo_finance.fetch_max_page_index()
-    print(max_index, update_date)
+    logger.info({"max_index":max_index, "update_date": update_date})
 
     # idx = max_index
     idx = 1
@@ -101,16 +101,13 @@ def main():
     fetch_yahoo_finance.fetch_soup_main()
     # print(fetch_yahoo_finance._soup_main)
 
-    print('start fetch_select_item')
+    logger.info('start fetch_select_item')
     fetch_yahoo_finance.fetch_select_item()
-    print('end')
     #
-    print(company_list.companies)
+    logger.info(json.dumps(company_list.companies, indent=2, ensure_ascii=False))
 
     gc.collect()
 
 
 if __name__ == '__main__':
-    logging.basicConfig(level=logging.INFO)
-
     main()

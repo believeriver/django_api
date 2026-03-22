@@ -13,12 +13,11 @@ from selenium.webdriver.chrome.service import Service
 from webdriver_manager.chrome import ChromeDriverManager
 
 
-logger = logging.getLogger(__name__)
-
 my_path = os.path.dirname(os.path.abspath(__file__))
 sys.path.append(my_path)
 
 import settings
+logger = settings.setup_logger(name=__name__)
 
 
 class IDataSet(ABC):
