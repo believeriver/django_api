@@ -20,8 +20,8 @@ logger = logging.getLogger(__name__)
 
 my_path = os.path.dirname(os.path.abspath(__file__))
 logger.debug(f"project route: {my_path}")
-# sys.path.append(my_path)
 sys.path.insert(0, my_path)
+
 
 from .models import Company, Financial
 from .serializers import CompanyListSerializer, CompanyDetailSerializer
