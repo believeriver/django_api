@@ -1,22 +1,25 @@
 import os
 import sys
 import datetime
+import logging
 
 from django.db.models import Prefetch, Q
 from django.http import Http404
 
 from rest_framework import viewsets, filters
 from rest_framework.decorators import action
-# from rest_framework.response import Response
-# from rest_framework.pagination import PageNumberPagination
 from rest_framework.permissions import AllowAny
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
+# from rest_framework.response import Response
+# from rest_framework.pagination import PageNumberPagination
+# from django_filters.rest_framework import DjangoFilterBackend
 
-#from django_filters.rest_framework import DjangoFilterBackend
+
+logger = logging.getLogger(__name__)
 
 my_path = os.path.dirname(os.path.abspath(__file__))
-print(f"プロジェクトルート: {my_path}")
+logger.debug(f"project route: {my_path}")
 # sys.path.append(my_path)
 sys.path.insert(0, my_path)
 
