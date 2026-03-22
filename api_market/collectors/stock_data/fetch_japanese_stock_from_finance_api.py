@@ -10,17 +10,10 @@ from pandas_datareader import data as pdr
 # import yfinance as yf
 import datetime
 
+logger = logging.getLogger(__name__)
+
 PROJECT_PATH = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 sys.path.append(PROJECT_PATH)
-
-handler = logging.StreamHandler(sys.stdout)
-formatter = logging.Formatter('%(asctime)s:%(name)s:%(levelname)s:%(message)s')
-handler.setFormatter(formatter)
-
-logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
-logger.propagate = False
-logger.addHandler(handler)
 
 
 class JapanStockModel(object):

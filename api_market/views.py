@@ -25,7 +25,7 @@ sys.path.insert(0, my_path)
 
 from .models import Company, Financial
 from .serializers import CompanyListSerializer, CompanyDetailSerializer
-from management.fetch_japanese_stock_from_finance_api import fetch_stock_dataframe
+from collectors.stock_data.fetch_japanese_stock_from_finance_api import fetch_stock_dataframe
 
 
 class CompanyViewSet(viewsets.ReadOnlyModelViewSet):
