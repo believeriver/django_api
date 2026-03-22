@@ -85,7 +85,7 @@ def main():
     scraping.fetch_soup_main(delay=3)
     scraping.fetch_select_item()
     for data in datasets.companies:
-        print(data)
+        logger.info(json.dumps(data, indent=2, ensure_ascii=False))
 
     gc.collect()
 
