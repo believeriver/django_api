@@ -24,3 +24,4 @@ def setup_logger(name, level=LOG_LEVEL):
         h.setFormatter(fmt)
         logger.addHandler(h)
     return logger
+

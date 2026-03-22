@@ -4,7 +4,7 @@ import gc
 import math
 import json
 
-
+# Set up the path to include the parent directory for importing common modules
 my_path = os.path.dirname(
     os.path.dirname(os.path.abspath(__file__)))
 sys.path.append(my_path)
@@ -12,8 +12,10 @@ sys.path.append(my_path)
 from common.settings import setup_logger
 from common.base_scraper import IDataSet, IFetchDataFromUrl
 
+# Set up logger
 logger = setup_logger(name=__name__)
 logger.info('Path added to sys.path: {}'.format(my_path))
+
 
 class CompanyData(IDataSet):
     def __init__(self):

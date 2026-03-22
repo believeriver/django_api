@@ -1,23 +1,29 @@
 import os
 import sys
+
+# Set up Path for settings and logger
+my_path = os.path.dirname(os.path.abspath(__file__))
+sys.path.append(my_path)
+
+# set up warnings
+from bootstrap import setup_warnings
+setup_warnings()
+
+# Set up logger
+import settings
+from settings import setup_logger
+logger = setup_logger(name=__name__)
+
 from time import sleep
 from typing import List, Optional
 from abc import ABC, abstractmethod
 import requests
 import pandas as pd
-import logging
 
 from bs4 import BeautifulSoup
 from selenium import webdriver
 from selenium.webdriver.chrome.service import Service
 from webdriver_manager.chrome import ChromeDriverManager
-
-
-my_path = os.path.dirname(os.path.abspath(__file__))
-sys.path.append(my_path)
-
-import settings
-logger = settings.setup_logger(name=__name__)
 
 
 class IDataSet(ABC):
