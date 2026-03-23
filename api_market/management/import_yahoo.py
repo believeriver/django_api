@@ -95,5 +95,6 @@ def main():
 
 
 if __name__ == '__main__':
+    # python import_yahoo.py -d
     main()
     # main(False)
