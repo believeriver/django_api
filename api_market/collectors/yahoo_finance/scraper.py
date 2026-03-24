@@ -14,7 +14,7 @@ from common.base_scraper import IDataSet, IFetchDataFromUrl
 
 # Set up logger
 logger = setup_logger(name=__name__)
-logger.info('Path added to sys.path: {}'.format(my_path))
+logger.debug('Path added to sys.path: {}'.format(my_path))
 
 
 class CompanyData(IDataSet):

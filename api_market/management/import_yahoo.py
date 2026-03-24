@@ -19,7 +19,7 @@ from api_market.collectors.yahoo_finance.scraper import CompanyData, FetchDataFr
 
 # Set up logger
 logger = setup_logger(name=__name__)
-logger.info('Path added to sys.path: {}'.format(project_root))
+logger.debug('Path added to sys.path: {}'.format(project_root))
 
 
 
@@ -36,14 +36,14 @@ def scraping(debug_flg: bool = True):
     company_list = CompanyData()
     start_index = 1
     max_index, update_date = fetch_index_date(company_list)
-    print(max_index, update_date)
+    logger.info({"max_pages": max_index, "update_date":update_date})
 
     if debug_flg:
-        print('[DEBUG] debug mode start.')
         max_index = 1
+        logger.info(f'[DEBUG] debug mode start. max_index is set to {max_index}.')
 
     for i in range(start_index, max_index+1):
-        print('page=', i)
+        logger.info({"page": i})
         fetch_yahoo_finance = FetchDataFromYahooFinance(i, company_list, delay_time=3)
         fetch_yahoo_finance.update_date = update_date
         fetch_yahoo_finance.fetch_soup_main()
@@ -62,13 +62,9 @@ def scraping(debug_flg: bool = True):
                 c_code, c_name, c_stock, float(c_dividend), int(c_rank), str(c_date))
 
             if debug_flg:
-                print(c_rank, c_code, c_name, c_dividend)
-                print(
-                    company.dividend_rank,
-                    company.code,
-                    company.name,
-                    company.dividend,
-                    company.dividend_update)
+                logger.debug(c_rank, c_code, c_name, c_dividend)
+                logger.info(
+                    f"登録: {company.dividend_rank}, {company.code}, {company.name}, {company.dividend}, {company.dividend_update}")
     gc.collect()
 
 
@@ -84,9 +80,7 @@ def main():
     options, args = parser.parse_args()
 
     debug = options.debug
-    logger.info({
-        'start': debug,
-    })
+    logger.info({'start': debug,})
 
     if debug is None:
         raise Exception("start and end index are required.")
@@ -95,6 +89,8 @@ def main():
 
 
 if __name__ == '__main__':
+    # デバッグモードで実行する場合は、コマンドライン引数に -d を付けてください。
     # python import_yahoo.py -d
+    #
     main()
     # main(False)
