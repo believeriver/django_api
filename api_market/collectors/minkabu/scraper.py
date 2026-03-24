@@ -4,16 +4,16 @@ import gc
 import json
 
 # Set up the path to include the parent directory for importing common modules
-my_path = os.path.dirname(
-    os.path.dirname(os.path.abspath(__file__)))
+my_path = os.path.dirname(os.path.dirname(
+    os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 sys.path.append(my_path)
 
-from common.settings import setup_logger
-from common.base_scraper import IDataSet, IFetchDataFromUrl
+from api_market.collectors.common.settings import setup_logger
+from api_market.collectors.common.base_scraper import IDataSet, IFetchDataFromUrl
 
 # Set up logger
 logger = setup_logger(name=__name__)
-logger.info('Path added to sys.path: {}'.format(my_path))
+logger.debug('Path added to sys.path: {}'.format(my_path))
 
 """
 Fetch the industry information for minkabu
