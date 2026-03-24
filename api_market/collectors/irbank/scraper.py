@@ -1,9 +1,6 @@
 import os
 import sys
-from time import sleep
 import gc
-from typing import Optional
-from selenium.webdriver.common.by import By
 import json
 
 # Set up the path to include the parent directory for importing common modules
@@ -13,6 +10,10 @@ sys.path.append(my_path)
 
 from api_market.collectors.common.settings import setup_logger
 from api_market.collectors.common.base_scraper import IDataSet, IFetchDataFromUrl, ISaveToFile
+
+from time import sleep
+from typing import Optional
+from selenium.webdriver.common.by import By
 
 # Set up logger
 logger = setup_logger(name=__name__)
@@ -94,9 +95,9 @@ class FetchDataFromIRBank(IFetchDataFromUrl):
             self._soup_main = self._fetch_soup(
                 self.base_url, delay=delay, method='selenium')
             if self._soup_main:
-                print(f"DEBUG: title = {self._soup_main.title}")
+                logger.debug(f"DEBUG: title = {self._soup_main.title}")
         except Exception as e:
-            print(f'[ERROR]: {e}')
+            logger.error(f'[ERROR]: {e}')
 
     @staticmethod
     def convert_units(value: str):
@@ -138,14 +139,14 @@ class FetchDataFromIRBank(IFetchDataFromUrl):
                 fp.write(str(company_code) + ',' + item_name + '\n')
                 for data in company_data:
                     fp.write(str(data[0]) + ',' + str(data[1]) + '\n')
-            print('create csv')
+            logger.info('create csv')
         else:
-            print('no data')
+            logger.info('no data')
 
     def fetch_table_data(self, table_name: str):
         # company_name_item = self._soup_main.find('div', id='container').select_one('main > div > h1 > a')
         company_name_item = self._soup_main.find('div', id='container').select_one('main > div > p > a')
-        print(company_name_item)
+        logger.info(company_name_item)
         company_code = company_name_item.text.split(' ')[0]
         company_name = company_name_item.text.split(' ')[1]
         # print(company_code, company_name)
@@ -200,7 +201,7 @@ class FetchDataFromIRBank(IFetchDataFromUrl):
             "一株配当": 'c_24',
             "配当性向": 'c_25'
         }
-        print(d_items["売上高"])
+        logger.info({"Sales": d_items["売上高"]})
         # check
         table_soup = self._soup_main.find('div', id=d_items[table_name])
         # search table title
@@ -246,7 +247,7 @@ if __name__ == '__main__':
     fetch_IR_bank.fetch_soup_main(delay=1)
     fetch_IR_bank.fetch_table_data(item)
 
-    print(company_list.companies)
+    logger.info(json.dumps(company_list.companies, indent=2, ensure_ascii=False))
 
     # fetch_IR_bank.test_to_csv(9986, item)
     # fetch_IR_bank.test_to_csv(9110, item)
