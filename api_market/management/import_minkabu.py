@@ -77,6 +77,9 @@ def main():
     parser.add_option('-e', '--end', action='store', type='int', dest='end', help='end index')
     options, args = parser.parse_args()
 
+    if options.start is None or options.end is None:
+        raise Exception("start and end index are required.")
+
     start_index = int(options.start)
     end_index = int(options.end)
     logger.info({
@@ -84,17 +87,16 @@ def main():
         'end': end_index,
     })
 
-    if start_index is None or end_index is None:
-        raise Exception("start and end index are required.")
-
     scraping(start_index, end_index)
 
 
 if __name__ == '__main__':
     # max index : 3372
     # python manage.py import_minkabu -s 0 -e 10
-
-    main()
+    try:
+        main()
+    except Exception as e:
+        logger.error(f"An error occurred: {e}")
 
     gc.collect()
 
