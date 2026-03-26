@@ -97,6 +97,6 @@ if __name__ == '__main__':
         main()
     except Exception as e:
         logger.error(f"An error occurred: {e}")
-
-    gc.collect()
+    finally:
+        gc.collect()
 
