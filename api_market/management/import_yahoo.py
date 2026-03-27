@@ -22,7 +22,6 @@ logger = setup_logger(name=__name__)
 logger.debug('Path added to sys.path: {}'.format(project_root))
 
 
-
 def fetch_index_date(c_list: CompanyData):
     fetch_yahoo = FetchDataFromYahooFinance(1, c_list)
     max_idx, update_day = fetch_yahoo.fetch_max_page_index()
