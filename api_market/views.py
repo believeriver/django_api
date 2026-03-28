@@ -18,14 +18,14 @@ from rest_framework.response import Response
 
 logger = logging.getLogger(__name__)
 
-my_path = os.path.dirname(os.path.abspath(__file__))
-logger.debug(f"project route: {my_path}")
-sys.path.insert(0, my_path)
+project_path = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+logger.debug(f"project route: {project_path}")
+sys.path.insert(0, project_path)
 
 
-from .models import Company, Financial
-from .serializers import CompanyListSerializer, CompanyDetailSerializer
-from collectors.stock_data.fetch_japanese_stock_from_finance_api import fetch_stock_dataframe
+from api_market.models import Company, Financial
+from api_market.serializers import CompanyListSerializer, CompanyDetailSerializer
+from api_market.management.import_stocks import fetch_stock_dataframe
 
 
 class CompanyViewSet(viewsets.ReadOnlyModelViewSet):
@@ -119,8 +119,25 @@ def stock_price(request, ticker: int):
     end = today.isoformat()
     span = 365
 
-    df = fetch_stock_dataframe(ticker, start, end, span)
-    data = df.to_dict(orient='records')
+    try:
+        df = fetch_stock_dataframe(ticker, start, end, span)
+        data = df.to_dict(orient='records')
+
+        if df.empty:
+            return Response(
+                {"detail": f"No stock data found for ticker={ticker}"},
+                status=404
+            )
+
+        if 'Close' not in df.columns:
+            return Response(
+                {"detail": f"Close column not found. columns={list(df.columns)}"},
+                status=500
+            )
+
+    except Exception as e:
+        logger.exception("stock fetch failed: ticker=%s", ticker)
+        return Response({"detail": str(e)}, status=500)
 
     return Response(data)
 

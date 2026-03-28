@@ -1,7 +1,22 @@
-import logging
 import sys
-import gc
 import os
+import logging
+
+
+project_root = os.path.dirname(
+    os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+sys.path.append(project_root)
+
+# set up warnings
+from api_market.collectors.common.bootstrap import setup_warnings
+setup_warnings()
+
+from api_market.collectors.common.settings import setup_logger
+# logger = logging.getLogger(__name__)
+logger = setup_logger(name=__name__)
+logger.info('Path added to sys.path: {}'.format(project_root))
+
+import gc
 import pandas as pd
 import numpy as np
 
@@ -9,11 +24,6 @@ import matplotlib.pyplot as plt
 from pandas_datareader import data as pdr
 # import yfinance as yf
 import datetime
-
-logger = logging.getLogger(__name__)
-
-PROJECT_PATH = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-sys.path.append(PROJECT_PATH)
 
 
 class JapanStockModel(object):
@@ -30,8 +40,9 @@ class JapanStockModel(object):
         """
         2025.05 ~ yfinace cannot response our request.
                           then, change to pandas_datareader by stooq
+        https://stooq.com/
         """
-        print('fetch_japan_stock_by_pdr_stooq: ticker=%s, start=%s, end=%s', _ticker_symbol, _start, _end)
+        logger.info('fetch_japan_stock_by_pdr_stooq: ticker=%s, start=%s, end=%s', _ticker_symbol, _start, _end)
         ticker_symbol_dr = f"{_ticker_symbol}.JP"
         try:
             df = pdr.DataReader(ticker_symbol_dr, "stooq", start=_start, end=_end)
