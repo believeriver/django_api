@@ -92,7 +92,7 @@ def main():
 
 if __name__ == '__main__':
     # max index : 3372
-    # python manage.py import_minkabu -s 0 -e 10
+    # pyth  import_minkabu.py -s 0 -e 10
     try:
         main()
     except Exception as e:

@@ -184,7 +184,7 @@ def main():
 
 if __name__ == '__main__':
     # max index : 3372
-    # python manage.py import_irbank -s 0 -e 10
+    # python import_irbank.py -s 0 -e 10
     try:
         main()
     except Exception as e:
