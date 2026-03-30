@@ -121,6 +121,7 @@ def stock_price(request, ticker: int):
 
     try:
         df = fetch_stock_dataframe(ticker, start, end, span)
+        logger.info(df)
         data = df.to_dict(orient='records')
 
         if df.empty:
@@ -129,7 +130,7 @@ def stock_price(request, ticker: int):
                 status=404
             )
 
-        if 'Close' not in df.columns:
+        if 'value' not in df.columns:
             return Response(
                 {"detail": f"Close column not found. columns={list(df.columns)}"},
                 status=500
