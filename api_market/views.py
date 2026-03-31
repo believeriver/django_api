@@ -33,6 +33,11 @@ class CompanyViewSet(viewsets.ReadOnlyModelViewSet):
     Company API要件：
     - 一覧：Company + Information（全件）
     - 詳細：Company + Information + 全Financial履歴
+
+        URL例:
+        http://127.0.0.1:8000/api_market/companies/
+        http://127.0.0.1:8000/api_market/companies/1418/
+        http://127.0.0.1:8000/api_market/companies/8963/
     """
 
     permission_classes = [AllowAny]
