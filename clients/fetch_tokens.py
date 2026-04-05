@@ -41,19 +41,7 @@ def logout(_access_token: str, _refresh_token: str):
 
 
 if __name__ == '__main__':
-    """
-    python manage.py migrate
-    python manage.py createsuperuser
-    user: nobuyuki
-    email: nobuyuki.galois@gmail.com
-    pass: nobuyuki@12345
-    """
-    # email = 'nobuyuki.galois@gmail.com'
-    # password = 'Nobuyuki@12345'
-    # password2 = 'Nobuyuki@12345'
-    email = 'nono@example.com'
-    password = 'pass1234'
-    password2 = 'pass1234'
+
 
     create_flg = True
 
