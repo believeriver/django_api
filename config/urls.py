@@ -20,8 +20,8 @@ from django.conf.urls.static import static
 
 urlpatterns = [
     path('admin/', admin.site.urls),
+    path('api/auth/', include('api_auth.urls')),
     path('api_market/', include('api_market.urls')),
-    path('authentication/', include('djoser.urls.jwt')),
 ]
 
 urlpatterns += static(

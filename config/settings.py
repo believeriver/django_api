@@ -50,10 +50,12 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'rest_framework',
+    'rest_framework_simplejwt.token_blacklist',
     'django_filters',
     'corsheaders',
     'djoser',
     'api_market.apps.ApiMarketConfig',
+    'api_auth.apps.ApiAuthConfig',
 ]
 
 MIDDLEWARE = [
@@ -174,9 +176,13 @@ REST_FRAMEWORK = {
 SIMPLE_JWT = {
     'AUTH_HEADER_TYPES': ('JWT',),
     'ACCESS_TOKEN_LIFETIME': timedelta(minutes=60),
+    'REFRESH_TOKEN_LIFETIME': timedelta(days=7),
+    'ROTATE_REFRESH_TOKENS':  True,
 }
 
 # AUTH_USER_MODEL = 'api_auth.User'
+# Custom User Model
+AUTH_USER_MODEL = 'api_auth.CustomUser'
 
 
 # Logging Configuration
