@@ -41,7 +41,9 @@ def logout(_access_token: str, _refresh_token: str):
 
 
 if __name__ == '__main__':
-
+    email = 'testuser@example.com'
+    password = 'test12345'
+    password2 = 'test12345'
 
     create_flg = True
 
@@ -49,12 +51,13 @@ if __name__ == '__main__':
         print('create user:')
         res = create_user(email, password, password2)
         print('res:', res)
-    #
-    # print('fetch token')
-    # token = fetch_token(email, password)
-    # print({'Authorization JWT': token})
+
+    print('fetch token:')
+    token = fetch_token(email, password)
+    print({'Authorization JWT': token})
 
     # ログイン
+    print('login:')
     login_response = requests.post(
         f'{BASE_URL}api/auth/login/',
         json={'email': email, 'password': password},
