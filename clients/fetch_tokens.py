@@ -45,7 +45,7 @@ if __name__ == '__main__':
     password = 'test12345'
     password2 = 'test12345'
 
-    create_flg = True
+    create_flg = False
 
     if create_flg:
         print('create user:')
