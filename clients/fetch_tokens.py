@@ -56,7 +56,7 @@ if __name__ == '__main__':
     token = fetch_token(email, password)
     print({'Authorization JWT': token})
 
-    # ログイン
+    # ログイン test
     print('login:')
     login_response = requests.post(
         f'{BASE_URL}api/auth/login/',
