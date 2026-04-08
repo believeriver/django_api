@@ -46,8 +46,8 @@ def change_password(_access_token: str, _current: str, _new: str, _new2: str):
 
 if __name__ == '__main__':
     email = 'nono@example.com'
-    password = 'pass1234'
-    newpass = 'newpass5678'
+    password = 'newpass5678'
+    newpass = 'pass1234'
 
     # ログイン
     login_res = requests.post(
@@ -59,7 +59,7 @@ if __name__ == '__main__':
 
     # パスワード変更
     print('--- パスワード変更 ---')
-    res = change_password(access_token, 'pass1234', newpass, newpass)
+    res = change_password(access_token, password, newpass, newpass)
     print(res)
 
     # 新パスワードで再ログイン確認
