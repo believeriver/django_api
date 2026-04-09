@@ -10,6 +10,7 @@ from .serializers import (
     LogoutSerializer,
     ChangePasswordSerializer,
     ProfileUpdateSerializer,
+    DeleteAccountSerializer,
 )
 
 User = get_user_model()
@@ -77,3 +78,14 @@ class ProfileUpdateView(APIView):
         serializer.is_valid(raise_exception=True)
         serializer.save()
         return Response(serializer.data, status=status.HTTP_200_OK)
+
+    def delete(self, request):
+        """アカウント削除（パスワード確認あり）"""
+        serializer = DeleteAccountSerializer(
+            data=request.data,
+            context={'request': request},
+        )
+        serializer.is_valid(raise_exception=True)
+        request.user.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
+

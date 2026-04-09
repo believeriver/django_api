@@ -16,6 +16,7 @@ POST   /api/auth/logout/          ログアウト（Blacklist登録）
 POST   /api/auth/change-password/ パスワード変更
 GET    /api/auth/profile/         プロフィール取得
 PATCH  /api/auth/profile/         プロフィール更新
+DELETE /api/auth/profile/         アカウント削除
 """
 
 urlpatterns = [
