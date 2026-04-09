@@ -8,6 +8,16 @@ from .views import (
     ProfileUpdateView,
 )
 
+"""
+POST   /api/auth/register/        ユーザー登録
+POST   /api/auth/login/           ログイン（JWT取得）
+POST   /api/auth/refresh/         トークンリフレッシュ
+POST   /api/auth/logout/          ログアウト（Blacklist登録）
+POST   /api/auth/change-password/ パスワード変更
+GET    /api/auth/profile/         プロフィール取得
+PATCH  /api/auth/profile/         プロフィール更新
+"""
+
 urlpatterns = [
     path('register/', RegisterView.as_view(),              name='auth-register'),
     path('login/',    CustomTokenObtainPairView.as_view(), name='auth-login'),
