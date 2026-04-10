@@ -41,11 +41,15 @@ def logout(_access_token: str, _refresh_token: str):
 
 
 if __name__ == '__main__':
-    email = 'testuser@example.com'
-    password = 'test12345'
-    password2 = 'test12345'
+    email = 'nono@example.com'
+    password = 'pass1234'
+    password2 = 'pass1234'
 
-    create_flg = False
+    # email = 'testuser@example.com'
+    # password = 'test12345'
+    # password2 = 'test12345'
+
+    create_flg = True
 
     if create_flg:
         print('create user:')

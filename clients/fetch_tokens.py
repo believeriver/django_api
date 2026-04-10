@@ -34,6 +34,10 @@ if __name__ == '__main__':
     password = 'pass1234'
     password2 = 'pass1234'
 
+    # email = 'test@example.com'
+    # password = 'test@12345'
+    # password2 = 'test@12345'
+
     create_flg = False
 
     print('fetch token:')
