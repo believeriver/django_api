@@ -119,7 +119,16 @@ def print_dashboard(data: list):
         per             = item.get('per')
         pbr             = item.get('pbr')
         dividend_income = item.get('dividend_income', 0)
+        source          = item.get('dividend_income_source')
         total_dividend_income += dividend_income
+
+        # 計算根拠の表示
+        if source == 'dividend_per_share':
+            source_label = '1株配当ベース'
+        elif source == 'dividend_yield':
+            source_label = '利回りベース（概算）'
+        else:
+            source_label = 'データなし'
 
         print(
             f"  [{item['company_code']}] {item['company_name']}"
@@ -131,13 +140,12 @@ def print_dashboard(data: list):
             f" | 配当利回り:{item.get('dividend_yield') or '-'}%"
             f" | 1株配当:{item.get('dividend_per_share') or '-'}円"
             f" | 配当収入予想:{dividend_income:>10,.0f}円"
-            f" | ({item.get('fiscal_year') or '年度不明'})"
+            f" | ({source_label})"
         )
 
-    # 合計配当収入
     print(f"\n  {'─' * 60}")
     print(f"  年間配当収入予想合計: {total_dividend_income:>12,.0f}円")
-
+    print(f"  ※利回りベースの銘柄は取得単価基準のため概算値です")
 
 def print_industry(data: list):
     for item in data:

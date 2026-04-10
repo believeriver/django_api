@@ -150,13 +150,12 @@ class PortfolioDashboardView(APIView):
             'company__information',
         )
 
-        # 保有銘柄コードを取得
+        # 保有銘柄コードを一括取得
         codes = list(
             records.values_list('company_id', flat=True).distinct()
         )
 
-        # 最新年度の財務データを一括取得（sqlite3対応）-------------------------
-        # order_byで会計年度降順にしてからPython側で最新1件だけ取り出す
+        # 最新年度の財務データを一括取得（sqlite3対応）
         all_financials = Financial.objects.filter(
             company_id__in=codes
         ).order_by('company_id', '-fiscal_year')
@@ -165,17 +164,6 @@ class PortfolioDashboardView(APIView):
         for f in all_financials:
             if f.company_id not in latest_financials:
                 latest_financials[f.company_id] = f  # 最初の1件が最新年度
-        # ---------------------------------------------------------------
-        """
-        # PostgreSQL移行後（1行に簡略化）
-        # 本番移行時は以下の1箇所だけ変更すれば高速化できます。
-        latest_financials = {
-            f.company_id: f
-            for f in Financial.objects.filter(
-                company_id__in=codes
-            ).order_by('company_id', '-fiscal_year').distinct('company_id')
-        }
-        """
 
         # 企業ごとに集計
         summary = {}
@@ -189,18 +177,16 @@ class PortfolioDashboardView(APIView):
                 summary[code] = {
                     'company_code':       code,
                     'company_name':       company.name,
-                    'dividend_yield':     company.dividend,        # 配当利回り（%）
+                    'dividend_yield':     company.dividend,
                     'industry':           information.industry if information else '未分類',
                     'per':                information.per      if information else None,
                     'pbr':                information.pbr      if information else None,
                     'dividend_per_share': (
-                        financial.dividend_per_share
-                        if financial else None
-                    ),                                             # 1株配当（円）
+                        financial.dividend_per_share if financial else None
+                    ),
                     'fiscal_year':        (
-                        financial.fiscal_year
-                        if financial else None
-                    ),                                             # 参照した会計年度
+                        financial.fiscal_year if financial else None
+                    ),
                     'total_shares':       0,
                     'total_cost':         0,
                 }
@@ -210,28 +196,38 @@ class PortfolioDashboardView(APIView):
         # 集計してレスポンス生成
         result = []
         for code, data in summary.items():
-            total_shares        = data['total_shares']
-            avg_price           = data['total_cost'] / total_shares
-            dividend_per_share  = data['dividend_per_share']
+            total_shares       = data['total_shares']
+            avg_price          = data['total_cost'] / total_shares
+            dividend_per_share = data['dividend_per_share']
+            dividend_yield     = data['dividend_yield']
 
-            # 配当収入予想（1株配当ベース）
-            dividend_income = (
-                dividend_per_share * total_shares
-                if dividend_per_share else 0
-            )
+            # 配当収入予想（1株配当 → 利回りの順でフォールバック）
+            if dividend_per_share:
+                # 1株配当ベース（正確）
+                dividend_income        = dividend_per_share * total_shares
+                dividend_income_source = 'dividend_per_share'
+            elif dividend_yield:
+                # 配当利回りベース（取得単価基準のため概算）
+                dividend_income        = float(avg_price) * total_shares * (dividend_yield / 100)
+                dividend_income_source = 'dividend_yield'
+            else:
+                # データなし
+                dividend_income        = 0
+                dividend_income_source = None
 
             result.append({
-                'company_code':        code,
-                'company_name':        data['company_name'],
-                'industry':            data['industry'],
-                'per':                 data['per'],
-                'pbr':                 data['pbr'],
-                'total_shares':        total_shares,
-                'avg_purchase_price':  round(float(avg_price), 2),
-                'dividend_yield':      data['dividend_yield'],
-                'dividend_per_share':  dividend_per_share,
-                'fiscal_year':         data['fiscal_year'],
-                'dividend_income':     round(float(dividend_income), 2),
+                'company_code':           code,
+                'company_name':           data['company_name'],
+                'industry':               data['industry'],
+                'per':                    data['per'],
+                'pbr':                    data['pbr'],
+                'total_shares':           total_shares,
+                'avg_purchase_price':     round(float(avg_price), 2),
+                'dividend_yield':         dividend_yield,
+                'dividend_per_share':     dividend_per_share,
+                'fiscal_year':            data['fiscal_year'],
+                'dividend_income':        round(float(dividend_income), 2),
+                'dividend_income_source': dividend_income_source,
             })
 
         # 配当収入予想の多い順にソート
