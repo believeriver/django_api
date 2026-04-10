@@ -155,7 +155,7 @@ class PortfolioDashboardView(APIView):
             records.values_list('company_id', flat=True).distinct()
         )
 
-        # 最新年度の財務データを一括取得（sqlite3対応）
+        # 最新年度の財務データを一括取得（sqlite3対応）-------------------------
         # order_byで会計年度降順にしてからPython側で最新1件だけ取り出す
         all_financials = Financial.objects.filter(
             company_id__in=codes
@@ -165,6 +165,17 @@ class PortfolioDashboardView(APIView):
         for f in all_financials:
             if f.company_id not in latest_financials:
                 latest_financials[f.company_id] = f  # 最初の1件が最新年度
+        # ---------------------------------------------------------------
+        """
+        # PostgreSQL移行後（1行に簡略化）
+        # 本番移行時は以下の1箇所だけ変更すれば高速化できます。
+        latest_financials = {
+            f.company_id: f
+            for f in Financial.objects.filter(
+                company_id__in=codes
+            ).order_by('company_id', '-fiscal_year').distinct('company_id')
+        }
+        """
 
         # 企業ごとに集計
         summary = {}
@@ -227,82 +238,6 @@ class PortfolioDashboardView(APIView):
         result.sort(key=lambda x: x['dividend_income'], reverse=True)
 
         return Response(result)
-
-# class PortfolioDashboardView(APIView):
-#     permission_classes = [IsAuthenticated]
-#
-#     """
-#     企業ごとに集計して返すダッシュボード用API
-#     [
-#       {
-#         "company_code": "7203",
-#         "company_name": "トヨタ自動車",
-#         "industry": "輸送用機器",
-#         "per": 8.5,
-#         "pbr": 1.2,
-#         "total_shares": 300,
-#         "avg_purchase_price": 2150.00,
-#         "dividend": 60.0,
-#         "dividend_income": 18000.0
-#       },
-#       {
-#         "company_code": "8963",
-#         "company_name": "××リート",
-#         "industry": "不動産",
-#         ...
-#       }
-#     ]
-#     """
-#
-#     def get(self, request):
-#         records = Portfolio.objects.filter(
-#             user=request.user
-#         ).select_related(
-#             'company',
-#             'company__information',  # InformationをJOINで取得
-#         )
-#
-#         summary = {}
-#         for record in records:
-#             code = record.company_id
-#             if code not in summary:
-#                 company     = record.company
-#                 information = getattr(company, 'information', None)
-#
-#                 summary[code] = {
-#                     'company_code':    code,
-#                     'company_name':    company.name,
-#                     'dividend':        company.dividend,
-#                     'industry':        information.industry if information else '',
-#                     'per':             information.per      if information else None,
-#                     'pbr':             information.pbr      if information else None,
-#                     'total_shares':    0,
-#                     'total_cost':      0,
-#                 }
-#             summary[code]['total_shares'] += record.shares
-#             summary[code]['total_cost']   += record.purchase_price * record.shares
-#
-#         result = []
-#         for code, data in summary.items():
-#             total_shares    = data['total_shares']
-#             avg_price       = data['total_cost'] / total_shares
-#             dividend_income = (
-#                 data['dividend'] * total_shares
-#                 if data['dividend'] else 0
-#             )
-#             result.append({
-#                 'company_code':       code,
-#                 'company_name':       data['company_name'],
-#                 'industry':           data['industry'],
-#                 'per':                data['per'],
-#                 'pbr':                data['pbr'],
-#                 'total_shares':       total_shares,
-#                 'avg_purchase_price': round(avg_price, 2),
-#                 'dividend':           data['dividend'],
-#                 'dividend_income':    round(dividend_income, 2),
-#             })
-#
-#         return Response(result)
 
 
 class PortfolioIndustryView(APIView):
