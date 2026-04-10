@@ -115,3 +115,127 @@ class PortfolioDetailView(APIView):
             )
         instance.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+class PortfolioDashboardView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    """
+    企業ごとに集計して返すダッシュボード用API
+    [
+      {
+        "company_code": "7203",
+        "company_name": "トヨタ自動車",
+        "industry": "輸送用機器",
+        "per": 8.5,
+        "pbr": 1.2,
+        "total_shares": 300,
+        "avg_purchase_price": 2150.00,
+        "dividend": 60.0,
+        "dividend_income": 18000.0
+      },
+      {
+        "company_code": "8963",
+        "company_name": "××リート",
+        "industry": "不動産",
+        ...
+      }
+    ]
+    """
+
+    def get(self, request):
+        records = Portfolio.objects.filter(
+            user=request.user
+        ).select_related(
+            'company',
+            'company__information',  # InformationをJOINで取得
+        )
+
+        summary = {}
+        for record in records:
+            code = record.company_id
+            if code not in summary:
+                company     = record.company
+                information = getattr(company, 'information', None)
+
+                summary[code] = {
+                    'company_code':    code,
+                    'company_name':    company.name,
+                    'dividend':        company.dividend,
+                    'industry':        information.industry if information else '',
+                    'per':             information.per      if information else None,
+                    'pbr':             information.pbr      if information else None,
+                    'total_shares':    0,
+                    'total_cost':      0,
+                }
+            summary[code]['total_shares'] += record.shares
+            summary[code]['total_cost']   += record.purchase_price * record.shares
+
+        result = []
+        for code, data in summary.items():
+            total_shares    = data['total_shares']
+            avg_price       = data['total_cost'] / total_shares
+            dividend_income = (
+                data['dividend'] * total_shares
+                if data['dividend'] else 0
+            )
+            result.append({
+                'company_code':       code,
+                'company_name':       data['company_name'],
+                'industry':           data['industry'],
+                'per':                data['per'],
+                'pbr':                data['pbr'],
+                'total_shares':       total_shares,
+                'avg_purchase_price': round(avg_price, 2),
+                'dividend':           data['dividend'],
+                'dividend_income':    round(dividend_income, 2),
+            })
+
+        return Response(result)
+
+
+class PortfolioIndustryView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    """
+    業種別の保有割合を返すAPI（円グラフ用）
+    [
+      {"industry": "輸送用機器", "total_cost": 645000.0, "ratio": 52.3},
+      {"industry": "不動産",    "total_cost": 75000.0,  "ratio": 6.1},
+      {"industry": "未分類",    "total_cost": 120000.0, "ratio": 9.7}
+    ]
+    """
+
+    def get(self, request):
+        """業種別の保有割合（円グラフ用）"""
+        records = Portfolio.objects.filter(
+            user=request.user
+        ).select_related(
+            'company__information',
+        )
+
+        industry_summary = {}
+        for record in records:
+            info     = getattr(record.company, 'information', None)
+            industry = info.industry if info else '未分類'
+            cost     = record.purchase_price * record.shares
+
+            if industry not in industry_summary:
+                industry_summary[industry] = 0
+            industry_summary[industry] += cost
+
+        total = sum(industry_summary.values())
+        result = [
+            {
+                'industry': industry,
+                'total_cost': round(float(cost), 2),
+                'ratio': round(float(cost) / float(total) * 100, 1),
+            }
+            for industry, cost in sorted(
+                industry_summary.items(),
+                key=lambda x: x[1],
+                reverse=True,
+            )
+        ]
+        return Response(result)
+
