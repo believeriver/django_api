@@ -113,30 +113,14 @@ def print_portfolio_list(data: list):
 
 
 def print_dashboard(data: list):
-    total_dividend_income = 0
-
     for item in data:
-        per             = item.get('per')
-        pbr             = item.get('pbr')
-        dividend_income = item.get('dividend_income', 0)
-        total_dividend_income += dividend_income
-
-        print(
-            f"  [{item['company_code']}] {item['company_name']}"
-            f" | 業種:{item.get('industry', '未分類')}"
-            f" | PER:{per if per is not None else '-'}"
-            f" | PBR:{pbr if pbr is not None else '-'}"
-            f" | 合計:{item['total_shares']}株"
-            f" | 平均単価:{item['avg_purchase_price']:>10,.0f}円"
-            f" | 配当利回り:{item.get('dividend_yield') or '-'}%"
-            f" | 1株配当:{item.get('dividend_per_share') or '-'}円"
-            f" | 配当収入予想:{dividend_income:>10,.0f}円"
-            f" | ({item.get('fiscal_year') or '年度不明'})"
-        )
-
-    # 合計配当収入
-    print(f"\n  {'─' * 60}")
-    print(f"  年間配当収入予想合計: {total_dividend_income:>12,.0f}円")
+        print(f"  [{item['company_code']}] {item['company_name']}"
+              f" | 業種:{item.get('industry', '未分類')}"
+              f" | PER:{item.get('per')}"
+              f" | PBR:{item.get('pbr')}"
+              f" | 合計:{item['total_shares']}株"
+              f" | 平均単価:{item['avg_purchase_price']}"
+              f" | 配当収入予想:{item['dividend_income']}円")
 
 
 def print_industry(data: list):

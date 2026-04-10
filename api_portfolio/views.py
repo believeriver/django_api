@@ -7,6 +7,8 @@ from django.db.models import Avg, Sum
 from itertools import groupby
 
 from .models import Portfolio
+from api_market.models import Financial
+
 from .serializers import (
     PortfolioSerializer,
     PortfolioSummarySerializer,
@@ -122,6 +124,7 @@ class PortfolioDashboardView(APIView):
 
     """
     企業ごとに集計して返すダッシュボード用API
+    response例：
     [
       {
         "company_code": "7203",
@@ -131,14 +134,10 @@ class PortfolioDashboardView(APIView):
         "pbr": 1.2,
         "total_shares": 300,
         "avg_purchase_price": 2150.00,
-        "dividend": 60.0,
+        "dividend_yield": 2.01,
+        "dividend_per_share": 60,
+        "fiscal_year": "2024-03",
         "dividend_income": 18000.0
-      },
-      {
-        "company_code": "8963",
-        "company_name": "××リート",
-        "industry": "不動産",
-        ...
       }
     ]
     """
@@ -148,50 +147,162 @@ class PortfolioDashboardView(APIView):
             user=request.user
         ).select_related(
             'company',
-            'company__information',  # InformationをJOINで取得
+            'company__information',
         )
 
+        # 保有銘柄コードを取得
+        codes = list(
+            records.values_list('company_id', flat=True).distinct()
+        )
+
+        # 最新年度の財務データを一括取得（sqlite3対応）
+        # order_byで会計年度降順にしてからPython側で最新1件だけ取り出す
+        all_financials = Financial.objects.filter(
+            company_id__in=codes
+        ).order_by('company_id', '-fiscal_year')
+
+        latest_financials = {}
+        for f in all_financials:
+            if f.company_id not in latest_financials:
+                latest_financials[f.company_id] = f  # 最初の1件が最新年度
+
+        # 企業ごとに集計
         summary = {}
         for record in records:
             code = record.company_id
             if code not in summary:
                 company     = record.company
                 information = getattr(company, 'information', None)
+                financial   = latest_financials.get(code)
 
                 summary[code] = {
-                    'company_code':    code,
-                    'company_name':    company.name,
-                    'dividend':        company.dividend,
-                    'industry':        information.industry if information else '',
-                    'per':             information.per      if information else None,
-                    'pbr':             information.pbr      if information else None,
-                    'total_shares':    0,
-                    'total_cost':      0,
+                    'company_code':       code,
+                    'company_name':       company.name,
+                    'dividend_yield':     company.dividend,        # 配当利回り（%）
+                    'industry':           information.industry if information else '未分類',
+                    'per':                information.per      if information else None,
+                    'pbr':                information.pbr      if information else None,
+                    'dividend_per_share': (
+                        financial.dividend_per_share
+                        if financial else None
+                    ),                                             # 1株配当（円）
+                    'fiscal_year':        (
+                        financial.fiscal_year
+                        if financial else None
+                    ),                                             # 参照した会計年度
+                    'total_shares':       0,
+                    'total_cost':         0,
                 }
             summary[code]['total_shares'] += record.shares
             summary[code]['total_cost']   += record.purchase_price * record.shares
 
+        # 集計してレスポンス生成
         result = []
         for code, data in summary.items():
-            total_shares    = data['total_shares']
-            avg_price       = data['total_cost'] / total_shares
+            total_shares        = data['total_shares']
+            avg_price           = data['total_cost'] / total_shares
+            dividend_per_share  = data['dividend_per_share']
+
+            # 配当収入予想（1株配当ベース）
             dividend_income = (
-                data['dividend'] * total_shares
-                if data['dividend'] else 0
+                dividend_per_share * total_shares
+                if dividend_per_share else 0
             )
+
             result.append({
-                'company_code':       code,
-                'company_name':       data['company_name'],
-                'industry':           data['industry'],
-                'per':                data['per'],
-                'pbr':                data['pbr'],
-                'total_shares':       total_shares,
-                'avg_purchase_price': round(avg_price, 2),
-                'dividend':           data['dividend'],
-                'dividend_income':    round(dividend_income, 2),
+                'company_code':        code,
+                'company_name':        data['company_name'],
+                'industry':            data['industry'],
+                'per':                 data['per'],
+                'pbr':                 data['pbr'],
+                'total_shares':        total_shares,
+                'avg_purchase_price':  round(float(avg_price), 2),
+                'dividend_yield':      data['dividend_yield'],
+                'dividend_per_share':  dividend_per_share,
+                'fiscal_year':         data['fiscal_year'],
+                'dividend_income':     round(float(dividend_income), 2),
             })
 
+        # 配当収入予想の多い順にソート
+        result.sort(key=lambda x: x['dividend_income'], reverse=True)
+
         return Response(result)
+
+# class PortfolioDashboardView(APIView):
+#     permission_classes = [IsAuthenticated]
+#
+#     """
+#     企業ごとに集計して返すダッシュボード用API
+#     [
+#       {
+#         "company_code": "7203",
+#         "company_name": "トヨタ自動車",
+#         "industry": "輸送用機器",
+#         "per": 8.5,
+#         "pbr": 1.2,
+#         "total_shares": 300,
+#         "avg_purchase_price": 2150.00,
+#         "dividend": 60.0,
+#         "dividend_income": 18000.0
+#       },
+#       {
+#         "company_code": "8963",
+#         "company_name": "××リート",
+#         "industry": "不動産",
+#         ...
+#       }
+#     ]
+#     """
+#
+#     def get(self, request):
+#         records = Portfolio.objects.filter(
+#             user=request.user
+#         ).select_related(
+#             'company',
+#             'company__information',  # InformationをJOINで取得
+#         )
+#
+#         summary = {}
+#         for record in records:
+#             code = record.company_id
+#             if code not in summary:
+#                 company     = record.company
+#                 information = getattr(company, 'information', None)
+#
+#                 summary[code] = {
+#                     'company_code':    code,
+#                     'company_name':    company.name,
+#                     'dividend':        company.dividend,
+#                     'industry':        information.industry if information else '',
+#                     'per':             information.per      if information else None,
+#                     'pbr':             information.pbr      if information else None,
+#                     'total_shares':    0,
+#                     'total_cost':      0,
+#                 }
+#             summary[code]['total_shares'] += record.shares
+#             summary[code]['total_cost']   += record.purchase_price * record.shares
+#
+#         result = []
+#         for code, data in summary.items():
+#             total_shares    = data['total_shares']
+#             avg_price       = data['total_cost'] / total_shares
+#             dividend_income = (
+#                 data['dividend'] * total_shares
+#                 if data['dividend'] else 0
+#             )
+#             result.append({
+#                 'company_code':       code,
+#                 'company_name':       data['company_name'],
+#                 'industry':           data['industry'],
+#                 'per':                data['per'],
+#                 'pbr':                data['pbr'],
+#                 'total_shares':       total_shares,
+#                 'avg_purchase_price': round(avg_price, 2),
+#                 'dividend':           data['dividend'],
+#                 'dividend_income':    round(dividend_income, 2),
+#             })
+#
+#         return Response(result)
 
 
 class PortfolioIndustryView(APIView):
