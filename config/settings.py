@@ -56,6 +56,7 @@ INSTALLED_APPS = [
     'djoser',
     'api_market.apps.ApiMarketConfig',
     'api_auth.apps.ApiAuthConfig',
+    'api_portfolio.apps.ApiPortfolioConfig',
 ]
 
 MIDDLEWARE = [
