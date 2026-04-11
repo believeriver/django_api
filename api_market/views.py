@@ -35,9 +35,9 @@ class CompanyViewSet(viewsets.ReadOnlyModelViewSet):
     - 詳細：Company + Information + 全Financial履歴
 
         URL例:
-        http://127.0.0.1:8000/api_market/companies/
-        http://127.0.0.1:8000/api_market/companies/1418/
-        http://127.0.0.1:8000/api_market/companies/8963/
+        http://127.0.0.1:8000/api/market/companies/
+        http://127.0.0.1:8000/api/market/companies/1418/
+        http://127.0.0.1:8000/api/market/companies/8963/
     """
 
     permission_classes = [AllowAny]
@@ -108,9 +108,9 @@ class CompanyViewSet(viewsets.ReadOnlyModelViewSet):
 def stock_price(request, ticker: int):
     """
     例:
-      http://127.0.0.1:8000/api_market/stock/7203/
-      /api_market/stock/7203/                       -> start は「今日から1年前」
-      /api_market/stock/7203/?start=2020-01-01     -> 指定された start を優先
+      http://127.0.0.1:8000/api/market/stock/7203/
+      /api/market/stock/7203/                       -> start は「今日から1年前」
+      /api/market/stock/7203/?start=2020-01-01     -> 指定された start を優先
     """
     today = datetime.date.today()
     # デフォルト: 今日から 1 年前

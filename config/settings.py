@@ -57,6 +57,7 @@ INSTALLED_APPS = [
     'api_market.apps.ApiMarketConfig',
     'api_auth.apps.ApiAuthConfig',
     'api_portfolio.apps.ApiPortfolioConfig',
+    'api_techlog.apps.ApiTechlogConfig',
 ]
 
 MIDDLEWARE = [
