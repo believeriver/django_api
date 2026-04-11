@@ -1,4 +1,4 @@
-# portfolio/serializers.py
+# api_portfolio/serializers.py
 from rest_framework import serializers
 from .models import Portfolio
 
@@ -8,7 +8,14 @@ class PortfolioRecordSerializer(serializers.ModelSerializer):
 
     class Meta:
         model  = Portfolio
-        fields = ['id', 'shares', 'purchase_price', 'purchased_at', 'memo']
+        fields = [
+            'id',
+            'shares',
+            'purchase_price',
+            'purchased_at',
+            'memo',
+            'account_type',   # ← 追加
+        ]
 
 
 class PortfolioSerializer(serializers.ModelSerializer):
@@ -26,6 +33,7 @@ class PortfolioSerializer(serializers.ModelSerializer):
             'purchase_price',
             'purchased_at',
             'memo',
+            'account_type',   # ← 追加
         ]
         read_only_fields = ['id', 'company_name']
 
@@ -36,8 +44,8 @@ class PortfolioSerializer(serializers.ModelSerializer):
 
 class PortfolioSummarySerializer(serializers.Serializer):
     """企業ごとの集計（一覧表示用）"""
-    company_code     = serializers.CharField()
-    company_name     = serializers.CharField()
-    total_shares     = serializers.IntegerField()
+    company_code       = serializers.CharField()
+    company_name       = serializers.CharField()
+    total_shares       = serializers.IntegerField()
     avg_purchase_price = serializers.DecimalField(max_digits=10, decimal_places=2)
-    records          = PortfolioRecordSerializer(many=True)
+    records            = PortfolioRecordSerializer(many=True)

@@ -119,6 +119,9 @@ class PortfolioDetailView(APIView):
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
+NISA_TYPES = {'nisa_growth', 'nisa_accumulation'}
+
+
 class PortfolioDashboardView(APIView):
     permission_classes = [IsAuthenticated]
 
@@ -133,6 +136,8 @@ class PortfolioDashboardView(APIView):
         "per": 8.5,
         "pbr": 1.2,
         "total_shares": 300,
+        "nisa_shares": 100, 
+        "taxable_shares": 200,
         "avg_purchase_price": 2150.00,
         "dividend_yield": 2.01,
         "dividend_per_share": 60,
@@ -150,12 +155,12 @@ class PortfolioDashboardView(APIView):
             'company__information',
         )
 
-        # 保有銘柄コードを一括取得
         codes = list(
             records.values_list('company_id', flat=True).distinct()
         )
 
-        # 最新年度の財務データを一括取得（sqlite3対応）
+        # 最新年度の財務データを一括取得（sqlite3対応） ----------------
+        # sqlite3対応のため、最新年度の財務データを一括取得してからPython側で会社コードごとに最新データを選別
         all_financials = Financial.objects.filter(
             company_id__in=codes
         ).order_by('company_id', '-fiscal_year')
@@ -163,9 +168,9 @@ class PortfolioDashboardView(APIView):
         latest_financials = {}
         for f in all_financials:
             if f.company_id not in latest_financials:
-                latest_financials[f.company_id] = f  # 最初の1件が最新年度
+                latest_financials[f.company_id] = f
+        # -------------------------------------------------------
 
-        # 企業ごとに集計
         summary = {}
         for record in records:
             code = record.company_id
@@ -187,13 +192,21 @@ class PortfolioDashboardView(APIView):
                     'fiscal_year':        (
                         financial.fiscal_year if financial else None
                     ),
-                    'total_shares':       0,
-                    'total_cost':         0,
+                    'total_shares':   0,
+                    'total_cost':     0,
+                    'nisa_shares':    0,   # ← 追加
+                    'taxable_shares': 0,   # ← 追加
                 }
+
             summary[code]['total_shares'] += record.shares
             summary[code]['total_cost']   += record.purchase_price * record.shares
 
-        # 集計してレスポンス生成
+            # 口座種別ごとに株数を集計
+            if record.account_type in NISA_TYPES:
+                summary[code]['nisa_shares']    += record.shares
+            else:
+                summary[code]['taxable_shares'] += record.shares
+
         result = []
         for code, data in summary.items():
             total_shares       = data['total_shares']
@@ -201,17 +214,14 @@ class PortfolioDashboardView(APIView):
             dividend_per_share = data['dividend_per_share']
             dividend_yield     = data['dividend_yield']
 
-            # 配当収入予想（1株配当 → 利回りの順でフォールバック）
+            # 配当収入予想（1株配当 → 利回りのフォールバック）
             if dividend_per_share:
-                # 1株配当ベース（正確）
-                dividend_income        = dividend_per_share * total_shares
+                dividend_income        = float(dividend_per_share) * total_shares
                 dividend_income_source = 'dividend_per_share'
             elif dividend_yield:
-                # 配当利回りベース（取得単価基準のため概算）
                 dividend_income        = float(avg_price) * total_shares * (dividend_yield / 100)
                 dividend_income_source = 'dividend_yield'
             else:
-                # データなし
                 dividend_income        = 0
                 dividend_income_source = None
 
@@ -222,15 +232,16 @@ class PortfolioDashboardView(APIView):
                 'per':                    data['per'],
                 'pbr':                    data['pbr'],
                 'total_shares':           total_shares,
+                'nisa_shares':            data['nisa_shares'],     # ← 追加
+                'taxable_shares':         data['taxable_shares'],  # ← 追加
                 'avg_purchase_price':     round(float(avg_price), 2),
                 'dividend_yield':         dividend_yield,
                 'dividend_per_share':     dividend_per_share,
                 'fiscal_year':            data['fiscal_year'],
-                'dividend_income':        round(float(dividend_income), 2),
+                'dividend_income':        round(dividend_income, 2),  # 名前変えない
                 'dividend_income_source': dividend_income_source,
             })
 
-        # 配当収入予想の多い順にソート
         result.sort(key=lambda x: x['dividend_income'], reverse=True)
 
         return Response(result)
