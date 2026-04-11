@@ -23,6 +23,7 @@ urlpatterns = [
     path('api/auth/', include('api_auth.urls')),
     path('api/market/', include('api_market.urls')),
     path('api/portfolio/', include('api_portfolio.urls')),
+    path('api/techlog/', include('api_techlog.urls')),
 ]
 
 urlpatterns += static(
