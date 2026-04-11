@@ -34,9 +34,10 @@ if __name__ == '__main__':
     password = 'pass1234'
     password2 = 'pass1234'
 
+    # Claudeが作成したテストユーザーの情報
     # email = 'test@example.com'
-    # password = 'test@12345'
-    # password2 = 'test@12345'
+    # password = 'TestPass123!'
+    # password2 = 'TestPass123!'
 
     create_flg = False
 
