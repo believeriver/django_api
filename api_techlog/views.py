@@ -228,6 +228,7 @@ class CommentDetailView(APIView):
 
 
 # api_techlog/views.py に追加
+# api_techlog/views.py の MyPostListView を差し替え
 class MyPostListView(APIView):
     permission_classes = [IsAuthenticated]
 
@@ -239,7 +240,13 @@ class MyPostListView(APIView):
             [フィルタリング]
             status=draft     : 下書きのみ
             status=published : 公開済みのみ
-            ※ 省略時は全件取得
+            category         : カテゴリIDで絞り込み  例) ?category=1
+            search           : キーワード検索         例) ?search=Django
+                               ※ タイトル・本文を横断検索
+
+            [ソート]
+            ordering=views   : 閲覧数の多い順
+            ordering=created : 作成日順（デフォルト）
         """
         posts = Post.objects.filter(
             author=request.user
@@ -247,10 +254,31 @@ class MyPostListView(APIView):
             'author', 'category'
         ).prefetch_related('tags', 'likes', 'comments')
 
-        # ステータスで絞り込み（?status=draft / ?status=published）
+        # ── フィルタリング ──────────────────
         status_param = request.query_params.get('status')
+        category_id  = request.query_params.get('category')
+        search       = request.query_params.get('search')
+
         if status_param in ('draft', 'published'):
             posts = posts.filter(status=status_param)
 
+        if category_id:
+            posts = posts.filter(category__id=category_id)
+
+        if search:
+            from django.db.models import Q
+            posts = posts.filter(
+                Q(title__icontains=search) |
+                Q(content__icontains=search)
+            ).distinct()
+
+        # ── ソート ──────────────────────────
+        ordering = request.query_params.get('ordering', 'created')
+        if ordering == 'views':
+            posts = posts.order_by('-views')
+        else:
+            posts = posts.order_by('-created_at')
+
         serializer = PostListSerializer(posts, many=True)
         return Response(serializer.data)
+

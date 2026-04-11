@@ -199,19 +199,14 @@ def get_posts_filtered(category_id=None, tag_id=None,
     return response.json()
 
 
-def get_my_posts(_token: str, _status: str = None,
-                 _category_id: int = None, _search: str = None,
-                 _ordering: str = None) -> list:
+def get_my_posts(_token: str, _status: str = None) -> list:
     """自分の記事一覧（下書き含む）"""
     _url   = f'{BASE_URL}api/techlog/posts/my/'
     params = {}
-    if _status:      params['status']   = _status
-    if _category_id: params['category'] = _category_id
-    if _search:      params['search']   = _search
-    if _ordering:    params['ordering'] = _ordering
-
+    if _status:
+        params['status'] = _status
     response = requests.get(_url, params=params, headers=auth_headers(_token))
-    logger.debug({'get_my_posts status': response.status_code, 'params': params})
+    logger.debug({'get_my_posts status': response.status_code})
     return response.json()
 
 
@@ -305,21 +300,10 @@ if __name__ == '__main__':
     for p in drafts:
         print(f"  [{p['status']}] {p['title']}")
 
-    print_section('自分の記事一覧（キーワード検索）')
-    results = get_my_posts(token, _search='Django')
-    print(f'  件数: {len(results)}件')
-    for p in results:
-        print(f"  [{p['status']}] {p['title']}")
-
-    print_section('自分の記事一覧（閲覧数順）')
-    results = get_my_posts(token, _ordering='views')
-    for p in results:
-        print(f"  閲覧:{p['views']} [{p['status']}] {p['title']}")
-
-    print_section('自分の記事一覧（下書き + キーワード）')
-    results = get_my_posts(token, _status='draft', _search='SLURM')
-    print(f'  件数: {len(results)}件')
-    for p in results:
+    print_section('自分の記事一覧（公開済みのみ）')
+    published = get_my_posts(token, _status='published')
+    print(f'  件数: {len(published)}件')
+    for p in published:
         print(f"  [{p['status']}] {p['title']}")
 
     # ── クリーンアップ ────────────────────
