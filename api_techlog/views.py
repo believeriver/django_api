@@ -33,17 +33,79 @@ class TagListView(APIView):
         return Response(serializer.data)
 
 
+# api_techlog/views.py の PostListView のみ修正
 class PostListView(APIView):
     permission_classes = [IsAuthenticatedOrReadOnly]
 
     def get(self, request):
-        posts      = Post.objects.filter(status='published').select_related(
-                         'author', 'category'
-                     ).prefetch_related('tags', 'likes', 'comments')
+        """
+        公開記事一覧（検索・フィルタリング対応）
+
+        クエリパラメータ:
+            [フィルタリング]
+            category : カテゴリIDで絞り込み  例) ?category=1
+            tag      : タグIDで絞り込み      例) ?tag=2
+            author   : 著者IDで絞り込み      例) ?author=uuid
+            search   : キーワード検索         例) ?search=Django
+                       ※ タイトル・本文・タグ名を横断検索
+                       ※ 複数条件は AND で絞り込み 例) ?category=1&search=Django
+
+            [ソート]
+            ordering=views   : 閲覧数の多い順
+            ordering=likes   : いいね数の多い順
+            ordering=created : 作成日順（デフォルト）
+
+        """
+        posts = Post.objects.filter(
+            status='published'
+        ).select_related(
+            'author', 'category'
+        ).prefetch_related('tags', 'likes', 'comments')
+
+        # ── フィルタリング ──────────────────
+        category_id = request.query_params.get('category')
+        tag_id      = request.query_params.get('tag')
+        author_id   = request.query_params.get('author')
+        search      = request.query_params.get('search')
+
+        if category_id:
+            posts = posts.filter(category__id=category_id)
+
+        if tag_id:
+            posts = posts.filter(tags__id=tag_id)
+
+        if author_id:
+            posts = posts.filter(author__id=author_id)
+
+        if search:
+            # タイトル・本文・タグ名を横断検索
+            from django.db.models import Q
+            posts = posts.filter(
+                Q(title__icontains=search)   |
+                Q(content__icontains=search) |
+                Q(tags__name__icontains=search)
+            ).distinct()  # タグのJOINで重複が出るため distinct() が必要
+
+        # ── ソート ──────────────────────────
+        # ?ordering=views    → 閲覧数順
+        # ?ordering=likes    → いいね数順
+        # ?ordering=created  → 作成日順（デフォルト）
+        ordering = request.query_params.get('ordering', 'created')
+        if ordering == 'views':
+            posts = posts.order_by('-views')
+        elif ordering == 'likes':
+            from django.db.models import Count
+            posts = posts.annotate(
+                likes_count=Count('likes')
+            ).order_by('-likes_count')
+        else:
+            posts = posts.order_by('-created_at')
+
         serializer = PostListSerializer(posts, many=True)
         return Response(serializer.data)
 
     def post(self, request):
+        """記事作成"""
         serializer = PostDetailSerializer(
             data=request.data,
             context={'request': request},
@@ -163,3 +225,32 @@ class CommentDetailView(APIView):
         comment = self.get_object(request, pk, comment_pk)
         comment.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+# api_techlog/views.py に追加
+class MyPostListView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        """
+        自分の記事一覧（下書き含む）
+
+        クエリパラメータ:
+            [フィルタリング]
+            status=draft     : 下書きのみ
+            status=published : 公開済みのみ
+            ※ 省略時は全件取得
+        """
+        posts = Post.objects.filter(
+            author=request.user
+        ).select_related(
+            'author', 'category'
+        ).prefetch_related('tags', 'likes', 'comments')
+
+        # ステータスで絞り込み（?status=draft / ?status=published）
+        status_param = request.query_params.get('status')
+        if status_param in ('draft', 'published'):
+            posts = posts.filter(status=status_param)
+
+        serializer = PostListSerializer(posts, many=True)
+        return Response(serializer.data)

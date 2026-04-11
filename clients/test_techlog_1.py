@@ -182,132 +182,109 @@ def print_post(post: dict):
     print(f"  コメント: {post.get('comment_count')}件")
 
 
-# test_techlog.py に追加
-
-def get_posts_filtered(category_id=None, tag_id=None,
-                        search=None, ordering=None) -> list:
-    """検索・フィルタリング付き記事一覧"""
-    _url    = f'{BASE_URL}api/techlog/posts/'
-    params  = {}
-    if category_id: params['category'] = category_id
-    if tag_id:      params['tag']      = tag_id
-    if search:      params['search']   = search
-    if ordering:    params['ordering'] = ordering
-
-    response = requests.get(_url, params=params)
-    logger.debug({'get_posts_filtered status': response.status_code, 'params': params})
-    return response.json()
-
-
-def get_my_posts(_token: str, _status: str = None) -> list:
-    """自分の記事一覧（下書き含む）"""
-    _url   = f'{BASE_URL}api/techlog/posts/my/'
-    params = {}
-    if _status:
-        params['status'] = _status
-    response = requests.get(_url, params=params, headers=auth_headers(_token))
-    logger.debug({'get_my_posts status': response.status_code})
-    return response.json()
-
-
-# ── メインに追加 ──────────────────────────
+# ─────────────────────────────────────────
+# メイン
+# ─────────────────────────────────────────
 
 if __name__ == '__main__':
     EMAIL    = 'nono@example.com'
     PASSWORD = 'pass1234'
 
+    # ── ログイン ──────────────────────────
     print_section('ログイン')
     token = fetch_token(EMAIL, PASSWORD)
     if not token:
         print('ログイン失敗。終了します。')
         sys.exit(1)
+    print('トークン取得成功')
 
-    categories  = get_categories()
-    tags        = get_tags()
-    category_id = categories[0]['id'] if categories else None
+    # ── カテゴリ・タグ確認 ────────────────
+    print_section('カテゴリ一覧')
+    categories = get_categories()
+    print(categories)
+
+    print_section('タグ一覧')
+    tags = get_tags()
+    print(tags)
+
+    # カテゴリ・タグが空の場合はadminで事前に登録が必要
+    if not categories:
+        print('\n⚠ カテゴリが登録されていません。admin画面から登録してください。')
+        print('  http://localhost:8000/admin/')
+        sys.exit(1)
+
+    category_id = categories[0]['id']
     tag_ids     = [t['id'] for t in tags[:2]] if tags else []
-    tag_id      = tags[0]['id'] if tags else None
 
-    # テスト用記事を複数作成
-    print_section('記事作成（複数）')
-    post1 = create_post(
+    # ── 記事作成（下書き）────────────────
+    print_section('記事作成（下書き）')
+    post = create_post(
         token,
         'DjangoでJWT認証を実装する',
-        '## はじめに\n\nDjangoとSimpleJWTの解説です。',
-        category_id, tag_ids, 'published',
+        '## はじめに\n\nDjango REST FrameworkとSimpleJWTを使った認証APIの実装方法を解説します。\n\n## インストール\n\n```bash\npip install djangorestframework-simplejwt\n```\n',
+        category_id,
+        tag_ids,
+        'draft',
     )
-    post2 = create_post(
-        token,
-        'Linuxのネットワーク設定まとめ',
-        '## はじめに\n\nLinuxのip コマンドの使い方を解説します。',
-        category_id, tag_ids, 'published',
-    )
-    post3 = create_post(
-        token,
-        'SLURM設定の基本',
-        '## はじめに\n\nHPCクラスタのSLURMジョブスケジューラの設定方法です。',
-        category_id, [], 'draft',  # 下書き
-    )
-    post1_id = post1.get('id')
-    post2_id = post2.get('id')
+    print_post(post)
+    post_id = post.get('id')
 
-    # ── フィルタリングテスト ───────────────
-    print_section('カテゴリで絞り込み')
-    results = get_posts_filtered(category_id=category_id)
-    print(f'  件数: {len(results)}件')
-    for p in results:
-        print(f"  {p['title']}")
+    # ── 記事一覧（下書きは表示されないはず）──
+    print_section('記事一覧（公開済みのみ）')
+    posts = get_posts()
+    print(f'  公開記事数: {len(posts)}件')
 
-    print_section('タグで絞り込み')
-    results = get_posts_filtered(tag_id=tag_id)
-    print(f'  件数: {len(results)}件')
-    for p in results:
-        print(f"  {p['title']}")
+    # ── 記事を公開 ───────────────────────
+    print_section('記事を公開に変更')
+    updated = update_post(token, post_id, status='published')
+    print_post(updated)
 
-    print_section('キーワード検索（Django）')
-    results = get_posts_filtered(search='Django')
-    print(f'  件数: {len(results)}件')
-    for p in results:
-        print(f"  {p['title']}")
+    # ── 記事一覧（公開後）─────────────────
+    print_section('記事一覧（公開後）')
+    posts = get_posts()
+    print(f'  公開記事数: {len(posts)}件')
+    for p in posts:
+        print(f"  [{p['status']}] {p['title']} | 閲覧:{p['views']} いいね:{p['like_count']}")
 
-    print_section('キーワード検索（Linux）')
-    results = get_posts_filtered(search='Linux')
-    print(f'  件数: {len(results)}件')
-    for p in results:
-        print(f"  {p['title']}")
+    # ── 記事詳細（閲覧数カウントアップ確認）─
+    print_section('記事詳細（閲覧数カウントアップ）')
+    detail = get_post(post_id)
+    print_post(detail)
+    detail = get_post(post_id)  # 2回目
+    print(f'  閲覧数（2回アクセス後）: {detail.get("views")}')
 
-    print_section('閲覧数順ソート')
-    results = get_posts_filtered(ordering='views')
-    for p in results:
-        print(f"  閲覧:{p['views']} {p['title']}")
+    # ── いいね ───────────────────────────
+    print_section('いいね追加')
+    print(like_post(token, post_id))
 
-    print_section('カテゴリ + キーワードの組み合わせ')
-    results = get_posts_filtered(category_id=category_id, search='Django')
-    print(f'  件数: {len(results)}件')
-    for p in results:
-        print(f"  {p['title']}")
+    print_section('いいね重複（エラー確認）')
+    print(like_post(token, post_id))  # 400が返るはず
 
-    # ── 自分の記事一覧 ────────────────────
-    print_section('自分の記事一覧（全て）')
-    my_posts = get_my_posts(token)
-    print(f'  件数: {len(my_posts)}件')
-    for p in my_posts:
-        print(f"  [{p['status']}] {p['title']}")
+    print_section('いいね取消')
+    print(unlike_post(token, post_id))
 
-    print_section('自分の記事一覧（下書きのみ）')
-    drafts = get_my_posts(token, _status='draft')
-    print(f'  件数: {len(drafts)}件')
-    for p in drafts:
-        print(f"  [{p['status']}] {p['title']}")
+    # ── コメント ─────────────────────────
+    print_section('コメント追加')
+    comment = add_comment(token, post_id, 'とても参考になりました！')
+    print(comment)
+    comment_id = comment.get('id')
 
-    print_section('自分の記事一覧（公開済みのみ）')
-    published = get_my_posts(token, _status='published')
-    print(f'  件数: {len(published)}件')
-    for p in published:
-        print(f"  [{p['status']}] {p['title']}")
+    print_section('コメント一覧')
+    comments = get_comments(post_id)
+    for c in comments:
+        print(f"  [{c['id']}] {c['author']['username']}: {c['content']}")
 
-    # ── クリーンアップ ────────────────────
-    print_section('テスト記事削除')
-    print(delete_post(token, post1_id))
-    print(delete_post(token, post2_id))
-    print(delete_post(token, post3.get('id')))
+    print_section('コメント更新')
+    print(update_comment(token, post_id, comment_id, '大変参考になりました！ありがとうございます。'))
+
+    print_section('コメント削除')
+    print(f'削除ステータス: {delete_comment(token, post_id, comment_id)}')
+
+    # ── 記事削除 ─────────────────────────
+    print_section('記事削除')
+    print(f'削除ステータス: {delete_post(token, post_id)}')
+
+    # ── 削除後の一覧確認 ──────────────────
+    print_section('削除後の記事一覧')
+    posts = get_posts()
+    print(f'  公開記事数: {len(posts)}件')
