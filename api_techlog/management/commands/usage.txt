@@ -1,0 +1,5 @@
+# dry-runで確認
+python manage.py import_blogmark api_techlog/management/commands/blogmark_export.json --user=nono@example.com --dry-run
+
+# 本番実行
+python manage.py import_blogmark api_techlog/management/commands/blogmark_export.json --user=nono@example.com
