@@ -115,7 +115,7 @@ class PostDetailSerializer(serializers.ModelSerializer):
             'comments', 'images',
             'created_at', 'updated_at',
         ]
-        read_only_fields = ['id', 'author', 'views', 'created_at', 'updated_at']
+        read_only_fields = ['id', 'author', 'views', 'updated_at']
         extra_kwargs = {
             'thumbnail': {'write_only': True},  # URLはthumbnail_urlで返す
         }
