@@ -57,25 +57,30 @@ class PostListView(APIView):
             ordering=likes   : いいね数の多い順
             ordering=created : 作成日順（デフォルト）
         """
-        posts = Post.objects.filter(
-            status='published'
-        ).select_related(
+        if request.user.is_authenticated and request.user.is_superuser:
+            posts = Post.objects.all()
+            # statusフィルター（superuserのみ）
+            status_param = request.query_params.get('status')
+            if status_param in ('draft', 'published', 'archived'):
+                posts = posts.filter(status=status_param)
+        else:
+            posts = Post.objects.filter(status='published')
+
+        posts = posts.select_related(
             'author', 'category'
         ).prefetch_related('tags', 'likes', 'comments')
 
         category_id = request.query_params.get('category')
-        tag_id      = request.query_params.get('tag')
-        search      = request.query_params.get('search')
+        tag_id = request.query_params.get('tag')
+        search = request.query_params.get('search')
 
         if category_id:
             posts = posts.filter(category__id=category_id)
-
         if tag_id:
             posts = posts.filter(tags__id=tag_id)
-
         if search:
             posts = posts.filter(
-                Q(title__icontains=search)   |
+                Q(title__icontains=search) |
                 Q(summary__icontains=search) |
                 Q(content__icontains=search)
             ).distinct()
