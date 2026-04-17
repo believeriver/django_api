@@ -25,6 +25,7 @@ urlpatterns = [
     path('api/portfolio/', include('api_portfolio.urls')),
     path('api/techlog/', include('api_techlog.urls')),
     path('api/blog/', include('api_blog.urls')),
+    path('api/analytics/', include('api_analytics.urls')),
 ]
 
 urlpatterns += static(
