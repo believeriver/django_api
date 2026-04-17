@@ -59,6 +59,7 @@ INSTALLED_APPS = [
     'api_portfolio.apps.ApiPortfolioConfig',
     'api_techlog.apps.ApiTechlogConfig',
     'api_blog.apps.ApiBlogConfig',
+    'api_analytics.apps.ApiAnalyticsConfig',
 ]
 
 MIDDLEWARE = [
@@ -70,6 +71,7 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'api_analytics.middleware.AccessLogMiddleware',
 ]
 
 ROOT_URLCONF = 'config.urls'
@@ -245,5 +247,21 @@ warnings.filterwarnings(
     message=r".*urllib3 v2 only supports OpenSSL 1\.1\.1\+.*",
     category=Warning,
 )
+
+
+# アナリティクス設定 2026.4.18
+ANALYTICS_EXCLUDE_PATHS = [
+    '/admin/',
+    '/api/auth/register/',
+    '/api/auth/refresh/',
+    '/api/auth/profile/',
+    '/api/auth/change-password/',
+    '/media/',
+]
+
+ANALYTICS_SECURITY_PATHS = [
+    '/api/auth/login/',
+    '/api/auth/logout/',
+]
 
 # -----------------
