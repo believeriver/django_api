@@ -1,31 +1,31 @@
+# api_market/views.py
 import os
 import sys
 import datetime
 import logging
 
-from django.db.models import Prefetch, Q
+from django.db.models import Q
 from django.http import Http404
+from django.core.cache import cache          # ← 追加
 
-from rest_framework import viewsets, filters
-from rest_framework.decorators import action
+from rest_framework import viewsets
+from rest_framework.decorators import action, api_view, permission_classes
 from rest_framework.permissions import AllowAny
-from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
-# from rest_framework.response import Response
-# from rest_framework.pagination import PageNumberPagination
-# from django_filters.rest_framework import DjangoFilterBackend
-
 
 logger = logging.getLogger(__name__)
 
 project_path = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-logger.debug(f"project route: {project_path}")
 sys.path.insert(0, project_path)
-
 
 from api_market.models import Company, Financial
 from api_market.serializers import CompanyListSerializer, CompanyDetailSerializer
 from api_market.management.import_stocks import fetch_stock_dataframe
+
+
+# キャッシュ有効期限
+STOCK_CACHE_TTL   = 60 * 15       # 株価データ: 15分
+COMPANY_CACHE_TTL = 60 * 60 * 24  # 企業一覧: 24時間
 
 
 class CompanyViewSet(viewsets.ReadOnlyModelViewSet):
@@ -34,46 +34,41 @@ class CompanyViewSet(viewsets.ReadOnlyModelViewSet):
     - 一覧：Company + Information（全件）
     - 詳細：Company + Information + 全Financial履歴
 
-        URL例:
+    URL例:
         http://127.0.0.1:8000/api/market/companies/
         http://127.0.0.1:8000/api/market/companies/1418/
         http://127.0.0.1:8000/api/market/companies/8963/
     """
-
     permission_classes = [AllowAny]
-    queryset = Company.objects.select_related('information').prefetch_related('financials')
-    serializer_class = CompanyListSerializer
+    queryset           = Company.objects.select_related(
+                             'information'
+                         ).prefetch_related('financials')
+    serializer_class   = CompanyListSerializer
 
     def get_object(self):
-        """code=PKで詳細取得（idではない）"""
-        code = self.kwargs['pk']  # URL末尾の3205を取得
+        code     = self.kwargs['pk']
         queryset = self.get_queryset()
         try:
-            return queryset.get(code=code)  # codeで検索！
+            return queryset.get(code=code)
         except Company.DoesNotExist:
             raise Http404(f"Company code '{code}' not found")
 
     def get_serializer_class(self):
-        """一覧=Company+Information、詳細=全データ"""
         if self.action == 'retrieve':
             return CompanyDetailSerializer
         return CompanyListSerializer
 
     def get_queryset(self):
-        """企業名・コード検索 + 最適プリロード"""
         if self.action == 'retrieve':
             return self.queryset
 
-        # リストのみ検索ソート
         queryset = self.queryset
-        # 検索：企業名 or コード（部分一致）
-        query = self.request.query_params.get('search', '').strip()
+        query    = self.request.query_params.get('search', '').strip()
         if query:
             queryset = queryset.filter(
                 Q(code__icontains=query) | Q(name__icontains=query)
             )
 
-        # ソート：配当 or コード
         sort = self.request.query_params.get('sort', 'code')
         if sort == 'dividend':
             queryset = queryset.order_by('-dividend', 'code')
@@ -83,21 +78,19 @@ class CompanyViewSet(viewsets.ReadOnlyModelViewSet):
         return queryset
 
     def get_serializer_context(self):
-        """クエリパラメータ伝播"""
         context = super().get_serializer_context()
         context.update({'request': self.request})
         return context
 
     @action(detail=False, methods=['get'])
     def search(self, request):
-        """検索（銘柄名・コード）"""
         query = request.query_params.get('q', '')
         if not query:
             return Response([])
 
         companies = Company.objects.select_related('information').filter(
             Q(code__icontains=query) | Q(name__icontains=query)
-        )[:20]  # 検索結果上限
+        )[:20]
 
         serializer = CompanyListSerializer(companies, many=True)
         return Response(serializer.data)
@@ -107,43 +100,52 @@ class CompanyViewSet(viewsets.ReadOnlyModelViewSet):
 @permission_classes([AllowAny])
 def stock_price(request, ticker: int):
     """
-    例:
-      http://127.0.0.1:8000/api/market/stock/7203/
-      /api/market/stock/7203/                       -> start は「今日から1年前」
-      /api/market/stock/7203/?start=2020-01-01     -> 指定された start を優先
+    株価データを返す。キャッシュ有効期限: 15分。
+
+    URL例:
+        /api/market/stock/7203/
+        /api/market/stock/7203/?start=2020-01-01
     """
-    today = datetime.date.today()
-    # デフォルト: 今日から 1 年前
-    # default_start_date = today - datetime.timedelta(days=365)
-    default_start_date = today - datetime.timedelta(days=180)
-    default_start = default_start_date.isoformat()  # 'YYYY-MM-DD'
+    today        = datetime.date.today()
+    default_start = (today - datetime.timedelta(days=180)).isoformat()
+    start        = request.query_params.get('start', default_start)
+    end          = today.isoformat()
+    span         = 365
 
-    # クエリパラメータ start があればそれを使い、無ければ default_start
-    start = request.query_params.get('start', default_start)
+    # ── キャッシュキー（ticker + start日付で一意に識別）──
+    cache_key = f'stock_{ticker}_{start}'
+    cached    = cache.get(cache_key)
 
-    end = today.isoformat()
-    span = 365
+    if cached is not None:
+        # キャッシュヒット → 即返す
+        logger.info('cache hit: %s', cache_key)
+        return Response(cached)
 
+    # ── キャッシュミス → 外部APIを叩く ──────────────
+    logger.info('cache miss: %s → fetching from external API', cache_key)
     try:
         df = fetch_stock_dataframe(ticker, start, end, span)
-        logger.info(df)
-        data = df.to_dict(orient='records')
 
-        if df.empty:
+        if df is None or df.empty:
             return Response(
-                {"detail": f"No stock data found for ticker={ticker}"},
-                status=404
+                {'detail': f'No stock data found for ticker={ticker}'},
+                status=404,
             )
 
         if 'value' not in df.columns:
             return Response(
-                {"detail": f"Close column not found. columns={list(df.columns)}"},
-                status=500
+                {'detail': f'Close column not found. columns={list(df.columns)}'},
+                status=500,
             )
 
+        data = df.to_dict(orient='records')
+
+        # ── キャッシュに保存（15分）──────────────────
+        cache.set(cache_key, data, timeout=STOCK_CACHE_TTL)
+        logger.info('cache set: %s (TTL=%ds)', cache_key, STOCK_CACHE_TTL)
+
     except Exception as e:
-        logger.exception("stock fetch failed: ticker=%s", ticker)
-        return Response({"detail": str(e)}, status=500)
+        logger.exception('stock fetch failed: ticker=%s', ticker)
+        return Response({'detail': str(e)}, status=500)
 
     return Response(data)
-
