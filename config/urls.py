@@ -26,6 +26,7 @@ urlpatterns = [
     path('api/techlog/', include('api_techlog.urls')),
     path('api/blog/', include('api_blog.urls')),
     path('api/analytics/', include('api_analytics.urls')),
+    path('api/contact/', include('api_contact.urls')),
 ]
 
 urlpatterns += static(

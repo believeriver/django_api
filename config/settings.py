@@ -60,6 +60,7 @@ INSTALLED_APPS = [
     'api_techlog.apps.ApiTechlogConfig',
     'api_blog.apps.ApiBlogConfig',
     'api_analytics.apps.ApiAnalyticsConfig',
+    'api_contact.apps.ApiContactConfig',
 ]
 
 MIDDLEWARE = [
@@ -164,6 +165,11 @@ CORS_ORIGIN_ALLOW_ALL = True
 # Reverse proxy settings (for production with nginx)
 USE_X_FORWARDED_HOST = True
 SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+
+# メール設定（有効にする際に設定） 2026.4.18
+EMAIL_BACKEND    = 'django.core.mail.backends.console.EmailBackend'  # 開発用（コンソール出力）
+DEFAULT_FROM_EMAIL = 'noreply@example.com'
+ADMIN_EMAIL        = 'admin@example.com'
 
 # REST Framework settings
 REST_FRAMEWORK = {
