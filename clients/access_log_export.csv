@@ -1,0 +1,28 @@
+﻿id,path,method,ip_address,username,status_code,response_time_ms,user_agent,site,created_at
+27,/api/analytics/sites/,GET,127.0.0.1,nobuyuki,200,1.01,python-requests/2.32.4,other,2026-04-18 00:00:53
+26,/api/analytics/daily/,GET,127.0.0.1,nobuyuki,200,1.48,python-requests/2.32.4,other,2026-04-18 00:00:53
+25,/api/analytics/popular-pages/,GET,127.0.0.1,nobuyuki,200,1.13,python-requests/2.32.4,other,2026-04-18 00:00:53
+24,/api/analytics/security-logs/,GET,127.0.0.1,nobuyuki,200,1.28,python-requests/2.32.4,other,2026-04-18 00:00:53
+23,/api/analytics/access-logs/,GET,127.0.0.1,nobuyuki,200,1.42,python-requests/2.32.4,other,2026-04-18 00:00:53
+22,/api/analytics/access-logs/,GET,127.0.0.1,nobuyuki,200,1.93,python-requests/2.32.4,other,2026-04-18 00:00:53
+21,/api/analytics/summary/,GET,127.0.0.1,nobuyuki,200,2.09,python-requests/2.32.4,other,2026-04-18 00:00:53
+20,/api/portfolio/,GET,127.0.0.1,nobuyuki,200,1.8,python-requests/2.32.4,portfolio,2026-04-18 00:00:53
+19,/api/techlog/posts/,GET,127.0.0.1,anonymous,200,142.96,python-requests/2.32.4,techlog,2026-04-18 00:00:53
+18,/api/techlog/posts/,GET,127.0.0.1,anonymous,200,265.56,python-requests/2.32.4,techlog,2026-04-18 00:00:53
+17,/api/blog/posts/,GET,127.0.0.1,anonymous,200,5.28,python-requests/2.32.4,blog,2026-04-18 00:00:53
+16,/api/blog/posts/,GET,127.0.0.1,anonymous,200,2.74,python-requests/2.32.4,blog,2026-04-18 00:00:53
+15,/api/blog/posts/,GET,127.0.0.1,anonymous,200,2.85,python-requests/2.32.4,blog,2026-04-18 00:00:53
+14,/api/blog/posts/,GET,127.0.0.1,anonymous,200,6.38,"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36",blog,2026-04-17 23:59:02
+13,/api/blog/posts/,GET,127.0.0.1,anonymous,200,25.32,"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36",blog,2026-04-17 23:59:02
+11,/api/blog/tags/,GET,127.0.0.1,anonymous,200,5.02,"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36",blog,2026-04-17 23:59:02
+12,/api/blog/categories/,GET,127.0.0.1,anonymous,200,4.19,"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36",blog,2026-04-17 23:59:02
+10,/api/blog/categories/,GET,127.0.0.1,anonymous,200,8.85,"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36",blog,2026-04-17 23:59:02
+9,/api/blog/tags/,GET,127.0.0.1,anonymous,200,7.69,"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36",blog,2026-04-17 23:59:02
+8,/api/techlog/posts/,GET,127.0.0.1,anonymous,200,124.63,"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36",techlog,2026-04-17 23:58:43
+7,/api/techlog/posts/,GET,127.0.0.1,anonymous,200,156.43,"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36",techlog,2026-04-17 23:58:43
+6,/api/techlog/tags/,GET,127.0.0.1,anonymous,200,33.18,"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36",techlog,2026-04-17 23:58:43
+5,/api/techlog/categories/,GET,127.0.0.1,anonymous,200,31.49,"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36",techlog,2026-04-17 23:58:43
+4,/api/techlog/tags/,GET,127.0.0.1,anonymous,200,7.82,"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36",techlog,2026-04-17 23:58:43
+3,/api/techlog/categories/,GET,127.0.0.1,anonymous,200,7.57,"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36",techlog,2026-04-17 23:58:43
+2,/api/market/companies/,GET,127.0.0.1,anonymous,200,1328.4,"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36",market,2026-04-17 23:58:38
+1,/api/market/companies/,GET,127.0.0.1,anonymous,200,1258.77,"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36",market,2026-04-17 23:58:37
