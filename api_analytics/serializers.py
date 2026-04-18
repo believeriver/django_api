@@ -4,8 +4,12 @@ from .models import AccessLog, SecurityLog
 
 
 class AccessLogSerializer(serializers.ModelSerializer):
+    # username = serializers.CharField(
+    #     source='user.username', default='anonymous', read_only=True
+    # )
+    # 変更後（両クラスとも同じ変更）
     username = serializers.CharField(
-        source='user.username', default='anonymous', read_only=True
+        source='user.email', default='anonymous', read_only=True
     )
 
     class Meta:
@@ -18,8 +22,12 @@ class AccessLogSerializer(serializers.ModelSerializer):
 
 
 class SecurityLogSerializer(serializers.ModelSerializer):
+    # username = serializers.CharField(
+    #     source='user.username', default='anonymous', read_only=True
+    # )
+    # 変更後（両クラスとも同じ変更）
     username = serializers.CharField(
-        source='user.username', default='anonymous', read_only=True
+        source='user.email', default='anonymous', read_only=True
     )
 
     class Meta:
