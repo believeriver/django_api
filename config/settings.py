@@ -161,6 +161,10 @@ MEDIA_URL = '/media/'
 # ]
 CORS_ORIGIN_ALLOW_ALL = True
 
+# Reverse proxy settings (for production with nginx)
+USE_X_FORWARDED_HOST = True
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+
 # REST Framework settings
 REST_FRAMEWORK = {
     # 'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
