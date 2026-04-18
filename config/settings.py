@@ -251,11 +251,21 @@ warnings.filterwarnings(
 
 # アナリティクス設定 2026.4.18
 ANALYTICS_EXCLUDE_PATHS = [
-    '/admin/',
+    # 認証関連
     '/api/auth/register/',
     '/api/auth/refresh/',
     '/api/auth/profile/',
     '/api/auth/change-password/',
+    # カテゴリ・タグ（補助API）
+    '/api/blog/categories/',
+    '/api/blog/tags/',
+    '/api/techlog/categories/',
+    '/api/techlog/tags/',
+    # アナリティクス自身
+    '/api/analytics/',
+    # admin画面
+    '/admin/',
+    # メディアファイル
     '/media/',
 ]
 

@@ -1,9 +1,18 @@
 # api_analytics/middleware.py
+import re
 import time
 import json
 import threading
 from django.conf import settings
 from django.utils.deprecation import MiddlewareMixin
+
+
+# 正規表現による除外パターン
+# settings.py の ANALYTICS_EXCLUDE_PATHS と組み合わせて使用
+EXCLUDE_PATTERNS = [
+    r'^/api/[^/]+/categories/$',  # 全アプリのカテゴリ一覧
+    r'^/api/[^/]+/tags/$',        # 全アプリのタグ一覧
+]
 
 
 def get_client_ip(request):
@@ -31,8 +40,8 @@ def save_access_log(data: dict):
         try:
             from api_analytics.models import AccessLog
             AccessLog.objects.create(**data)
-        except Exception as e:
-            pass  # ログ保存失敗はサイレントに無視
+        except Exception:
+            pass
     threading.Thread(target=_save, daemon=True).start()
 
 
@@ -42,7 +51,7 @@ def save_security_log(data: dict):
         try:
             from api_analytics.models import SecurityLog
             SecurityLog.objects.create(**data)
-        except Exception as e:
+        except Exception:
             pass
     threading.Thread(target=_save, daemon=True).start()
 
@@ -55,12 +64,17 @@ class AccessLogMiddleware(MiddlewareMixin):
     def process_response(self, request, response):
         path = request.path
 
-        # 除外パスはスキップ
+        # ── 除外判定① settings.py の前方一致 ──────────
         exclude_paths = getattr(settings, 'ANALYTICS_EXCLUDE_PATHS', [])
         if any(path.startswith(p) for p in exclude_paths):
             return response
 
-        # レスポンスタイム計算
+        # ── 除外判定② 正規表現パターン ─────────────────
+        for pattern in EXCLUDE_PATTERNS:
+            if re.match(pattern, path):
+                return response
+
+        # ── レスポンスタイム計算 ─────────────────────
         start_time    = getattr(request, '_start_time', time.time())
         response_time = round((time.time() - start_time) * 1000, 2)
 
@@ -68,7 +82,7 @@ class AccessLogMiddleware(MiddlewareMixin):
         user_agent = request.META.get('HTTP_USER_AGENT', '')
         user       = request.user if request.user.is_authenticated else None
 
-        # セキュリティパスの処理
+        # ── セキュリティパスの処理 ──────────────────────
         security_paths = getattr(settings, 'ANALYTICS_SECURITY_PATHS', [])
         if any(path.startswith(p) for p in security_paths):
             self._handle_security_log(
@@ -76,7 +90,7 @@ class AccessLogMiddleware(MiddlewareMixin):
             )
             return response
 
-        # 通常アクセスログを保存
+        # ── 通常アクセスログを保存 ──────────────────────
         save_access_log({
             'path':          path,
             'method':        request.method,
@@ -99,7 +113,6 @@ class AccessLogMiddleware(MiddlewareMixin):
         if '/login/' in path:
             if response.status_code == 200:
                 action = 'login_success'
-                # レスポンスからemailを取得
                 try:
                     body  = json.loads(response.content)
                     email = body.get('email', '')
@@ -107,7 +120,6 @@ class AccessLogMiddleware(MiddlewareMixin):
                     pass
             else:
                 action = 'login_failed'
-                # リクエストボディからemailを取得
                 try:
                     body  = json.loads(request.body)
                     email = body.get('email', '')
@@ -126,4 +138,3 @@ class AccessLogMiddleware(MiddlewareMixin):
                 'email':      email,
                 'user_agent': user_agent,
             })
-            
