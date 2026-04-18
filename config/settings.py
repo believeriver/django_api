@@ -150,6 +150,26 @@ STATIC_URL = '/static/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 MEDIA_URL = '/media/'
 
+# 開発環境：メモリキャッシュ（追加パッケージ不要）
+CACHES = {
+    'default': {
+        'BACKEND':  'django.core.cache.backends.locmem.LocMemCache',
+        'LOCATION': 'api_market_cache',
+    }
+}
+
+# 本番VPS移行後はRedisに切り替える
+# Redisインストール
+# sudo apt install redis-server
+# pip install django-redis
+# CACHES = {
+#     'default': {
+#         'BACKEND':  'django.core.cache.backends.redis.RedisCache',
+#         'LOCATION': 'redis://127.0.0.1:6379/1',
+#     }
+# }
+
+
 # frontend: React Vita.
 # CORS_ORIGIN_WHITELIST = [
 #     "http://localhost:3000",
