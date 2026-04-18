@@ -9,6 +9,21 @@ from .serializers import ContactMessageCreateSerializer, ContactMessageSerialize
 # メール通知のオンオフ（有効にする際は True に変更）
 CONTACT_MAIL_ENABLED = False
 
+"""
+メール通知を有効にする際の手順（メモ）
+# api_contact/views.py
+CONTACT_MAIL_ENABLED = True  # ← Trueに変更
+
+# settings.py（例：Gmailの場合）
+EMAIL_BACKEND       = 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_HOST          = 'smtp.gmail.com'
+EMAIL_PORT          = 587
+EMAIL_USE_TLS       = True
+EMAIL_HOST_USER     = 'your_gmail@gmail.com'
+EMAIL_HOST_PASSWORD = 'your_app_password'  # Googleアプリパスワード
+DEFAULT_FROM_EMAIL  = 'your_gmail@gmail.com'
+ADMIN_EMAIL         = 'admin@example.com'
+"""
 
 class ContactCreateView(generics.CreateAPIView):
     """POST /api/contact/ — 誰でも送信可"""

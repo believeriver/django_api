@@ -7,7 +7,8 @@ class ContactMessageCreateSerializer(serializers.ModelSerializer):
     """投稿用（認証不要）"""
     class Meta:
         model  = ContactMessage
-        fields = ['name', 'email', 'subject', 'body']
+        fields = ['id', 'name', 'email', 'subject', 'body']  # ← id追加
+        read_only_fields = ['id']
 
 
 class ContactMessageSerializer(serializers.ModelSerializer):
