@@ -27,7 +27,6 @@ def print_section(title):
 if __name__ == '__main__':
     SUPER_EMAIL    = 'admin@example.com'
     SUPER_PASSWORD = 'adminpass'
-
     USER_EMAIL     = 'nono@example.com'
     USER_PASSWORD  = 'pass1234'
 
