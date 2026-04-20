@@ -44,3 +44,4 @@ if __name__ == '__main__':
     print(f"\n  --- リンク ({len(data['links'])}件) ---")
     for l in data['links']:
         print(f"  [{l['platform']}] {l['url']}")
+
