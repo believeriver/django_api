@@ -170,6 +170,8 @@ CACHES = {
 #     }
 # }
 
+# Django Version up
+DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 # frontend: React Vita.
 # CORS_ORIGIN_WHITELIST = [
