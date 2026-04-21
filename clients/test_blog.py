@@ -222,7 +222,6 @@ if __name__ == '__main__':
     SUPER_PASSWORD = 'adminpass'
 
 
-
     # 一般ユーザー（コメント・いいねテスト用）
     USER_EMAIL    = 'nono@example.com'
     USER_PASSWORD = 'pass1234'
