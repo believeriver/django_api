@@ -159,8 +159,8 @@ def print_industry(data: list):
 # ─────────────────────────────────────────
 
 if __name__ == '__main__':
-    EMAIL    = 'nono@example.com'
-    PASSWORD = 'pass1234'
+    EMAIL    = 'testuser@example.com'
+    PASSWORD = 'testuser'
 
     # ── ログイン ──────────────────────────
     print_section('ログイン')

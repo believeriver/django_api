@@ -87,8 +87,8 @@ def delete_portfolio(_token: str, _id: int) -> int:
 # ─────────────────────────────────────────
 
 if __name__ == '__main__':
-    EMAIL    = 'nono@example.com'
-    PASSWORD = 'pass1234'
+    EMAIL    = 'testuser@example.com'
+    PASSWORD = 'testuser'
 
     # ── ログイン ──────────────────────────
     print('\n===== ログイン =====')

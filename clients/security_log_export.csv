@@ -1,2 +1,0 @@
-﻿id,action,ip_address,username,email,user_agent,created_at
-1,login_success,127.0.0.1,anonymous,nobuyuki.galois@gmail.com,python-requests/2.32.4,2026-04-18 00:00:53

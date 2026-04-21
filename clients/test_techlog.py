@@ -218,8 +218,8 @@ def get_my_posts(_token: str, _status: str = None,
 # ── メインに追加 ──────────────────────────
 
 if __name__ == '__main__':
-    EMAIL    = 'nono@example.com'
-    PASSWORD = 'pass1234'
+    EMAIL    = 'testuser@example.com'
+    PASSWORD = 'testuser'
 
     print_section('ログイン')
     token = fetch_token(EMAIL, PASSWORD)
