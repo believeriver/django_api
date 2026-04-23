@@ -12,7 +12,7 @@ services:
     restart: always
 
   backend:
-    build: ./django_api
+    build: ../django_api
     volumes:
       - static_files:/app/staticfiles
       - media_files:/app/media
@@ -26,7 +26,7 @@ services:
     restart: always
 
   frontend:
-    build: ./frontend_apps/claude
+    build: ../frontend_apps/claude
     restart: always
 
   nginx:
