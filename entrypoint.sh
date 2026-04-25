@@ -15,6 +15,8 @@ connection.ensure_connection()
 done
 
 echo "=== Running migrations... ==="
+# api_auth を先に migrate してから全体を migrate
+python manage.py migrate api_auth --settings=config.settings_prod
 python manage.py migrate --settings=config.settings_prod
 
 echo "=== Collecting static files... ==="

@@ -24,7 +24,14 @@ env = environ.Env()
 root = environ.Path(BASE_DIR / 'secrets')
 
 # Development
-env.read_env(root('.env.dev'))
+#env.read_env(root('.env.dev'))
+#
+#2026.4.23
+env_file = '.env.prod' if os.environ.get('DJANGO_SETTINGS_MODULE') == 'config.settings_prod' else '.env.dev'
+try:
+    env.read_env(root(env_file))
+except Exception:
+    pass
 
 
 # Quick-start development settings - unsuitable for production
