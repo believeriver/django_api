@@ -69,6 +69,7 @@ INSTALLED_APPS = [
     'api_analytics.apps.ApiAnalyticsConfig',
     'api_contact.apps.ApiContactConfig',
     'api_profile.apps.ApiProfileConfig',
+    'api_announce.apps.ApiAnnounceConfig',
 ]
 
 MIDDLEWARE = [
