@@ -28,6 +28,7 @@ urlpatterns = [
     path('api/analytics/', include('api_analytics.urls')),
     path('api/contact/', include('api_contact.urls')),
     path('api/profile/', include('api_profile.urls')),
+    path('api/announce/', include('api_announce.urls')),
 ]
 
 urlpatterns += static(
