@@ -7,6 +7,7 @@ class WatchItemSerializer(serializers.ModelSerializer):
     company_code     = serializers.CharField(source='company.code', read_only=True)
     company_name     = serializers.CharField(source='company.name', read_only=True)
     company_industry = serializers.SerializerMethodField()
+    company_dividend = serializers.FloatField(source='company.dividend', read_only=True)
     alert_label      = serializers.CharField(
                            source='get_alert_status_display', read_only=True
                        )
@@ -19,7 +20,7 @@ class WatchItemSerializer(serializers.ModelSerializer):
         model  = WatchItem
         fields = [
             'id',
-            'company_code', 'company_name', 'company_industry',
+            'company_code', 'company_name', 'company_industry', 'company_dividend',
             'company_code_input',
             'target_price', 'current_price',
             'price_diff_pct',
