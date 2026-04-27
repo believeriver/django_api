@@ -29,6 +29,7 @@ urlpatterns = [
     path('api/contact/', include('api_contact.urls')),
     path('api/profile/', include('api_profile.urls')),
     path('api/announce/', include('api_announce.urls')),
+    path('api/watchlist/', include('api_watchlist.urls')),
 ]
 
 urlpatterns += static(

@@ -70,6 +70,7 @@ INSTALLED_APPS = [
     'api_contact.apps.ApiContactConfig',
     'api_profile.apps.ApiProfileConfig',
     'api_announce.apps.ApiAnnounceConfig',
+    'api_watchlist.apps.ApiWatchlistConfig',
 ]
 
 MIDDLEWARE = [
