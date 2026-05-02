@@ -1,4 +1,3 @@
-# clients/test_watchlist.py
 import requests
 import logging
 import sys
@@ -25,7 +24,7 @@ def print_section(title):
 
 
 if __name__ == '__main__':
-    EMAIL    = 'testuser@example.com'
+    EMAIL = 'testuser@example.com'
     PASSWORD = 'testuser'
 
     # ── ログイン ──────────────────────────
@@ -97,7 +96,7 @@ if __name__ == '__main__':
               f"アラート:{item['alert_label']}")
 
     # ── 株価自動更新・アラート判定 ──────────
-    print_section('株価自動更新')
+    print_section('株価自動更新（最高値含む）')
     res = requests.post(
         f'{BASE_URL}api/watchlist/{watchlist_id}/items/refresh/',
         headers=auth_headers(token),
@@ -105,23 +104,38 @@ if __name__ == '__main__':
     print('updated:', res.json().get('updated'))
     print('errors: ', res.json().get('errors'))
     for item in res.json().get('watchlist', {}).get('items', []):
-        print(f"  [{item['company_code']}] "
-              f"現在:{item['current_price']} "
-              f"差分:{item['price_diff_pct']}% "
-              f"アラート:{item['alert_label']}")
+        print(f"  [{item['company_code']}] {item['company_name']}")
+        print(f"    現在株価  : {item['current_price']}")
+        print(f"    目標株価  : {item['target_price']}")
+        print(f"    目標差分  : {item['price_diff_pct']}% → {item['alert_label']}")
+        print(f"    1年最高値 : {item['high_price_1y']} ({item['high_price_1y_at']})")
+        print(f"    最高値差分: {item['high_diff_pct']}% → {item['high_alert_label']}")
 
     # ── 手動で current_price を更新 ────────
     print_section(f'手動で current_price を更新（id={item_id}）')
     res = requests.patch(
         f'{BASE_URL}api/watchlist/{watchlist_id}/items/{item_id}/',
-        json={'current_price': 400.0},  # 500 → 400 = -20%
+        json={'current_price': 400.0},
         headers=auth_headers(token),
     )
     print(res.status_code)
     item = res.json()
     print(f"  現在:{item['current_price']} "
-          f"差分:{item['price_diff_pct']}% "
-          f"アラート:{item['alert_label']}")
+          f"目標差分:{item['price_diff_pct']}% ({item['alert_label']}) "
+          f"最高値差分:{item['high_diff_pct']}% ({item['high_alert_label']})")
+
+    # ── target_price を更新してアラート再判定 ──
+    print_section(f'target_price を更新（id={item_id}）')
+    res = requests.patch(
+        f'{BASE_URL}api/watchlist/{watchlist_id}/items/{item_id}/',
+        json={'target_price': 1600.0},
+        headers=auth_headers(token),
+    )
+    print(res.status_code)
+    item = res.json()
+    print(f"  目標:{item['target_price']} "
+          f"現在:{item['current_price']} "
+          f"目標差分:{item['price_diff_pct']}% ({item['alert_label']})")
 
     # ── ウォッチリスト詳細 ────────────────
     print_section('ウォッチリスト詳細')

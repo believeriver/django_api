@@ -52,8 +52,18 @@ class WatchItem(models.Model):
                         choices=ALERT_CHOICES,
                         default=ALERT_NONE,
                     )
-    created_at    = models.DateTimeField(auto_now_add=True)
-    updated_at    = models.DateTimeField(auto_now=True)
+
+    # 直近1年間の最高値
+    high_price_1y     = models.FloatField(null=True, blank=True)
+    high_price_1y_at  = models.DateField(null=True, blank=True)
+    high_alert_status = models.CharField(
+                            max_length=20,
+                            choices=ALERT_CHOICES,
+                            default=ALERT_NONE,
+                        )
+
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
         ordering        = ['-created_at']
@@ -72,8 +82,18 @@ class WatchItem(models.Model):
             2,
         )
 
+    @property
+    def high_diff_pct(self):
+        """直近1年最高値からの差分（%）"""
+        if self.current_price is None or not self.high_price_1y:
+            return None
+        return round(
+            ((self.current_price - self.high_price_1y) / self.high_price_1y) * 100,
+            2,
+        )
+
     def update_alert_status(self):
-        """アラートフラグを更新"""
+        """目標株価基準のアラートを更新"""
         pct = self.price_diff_pct
         if pct is None:
             self.alert_status = self.ALERT_NONE
@@ -84,3 +104,16 @@ class WatchItem(models.Model):
         else:
             self.alert_status = self.ALERT_NONE
         self.save(update_fields=['alert_status', 'updated_at'])
+
+    def update_high_alert_status(self):
+        """最高値基準のアラートを更新"""
+        pct = self.high_diff_pct
+        if pct is None:
+            self.high_alert_status = self.ALERT_NONE
+        elif pct <= -20:
+            self.high_alert_status = self.ALERT_20
+        elif pct <= -10:
+            self.high_alert_status = self.ALERT_10
+        else:
+            self.high_alert_status = self.ALERT_NONE
+        self.save(update_fields=['high_alert_status', 'updated_at'])

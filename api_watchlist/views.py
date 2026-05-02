@@ -101,6 +101,7 @@ class WatchItemDetailView(APIView):
         if 'target_price' in request.data or 'current_price' in request.data:
             item.refresh_from_db()
             item.update_alert_status()
+            item.update_high_alert_status()
 
         return Response(WatchItemSerializer(item).data)
 
@@ -112,7 +113,7 @@ class WatchItemDetailView(APIView):
 
 
 class WatchItemRefreshView(APIView):
-    """現在株価を取得してアラートを更新"""
+    """現在株価・直近1年最高値を取得してアラートを更新"""
     permission_classes = [IsAuthenticated]
 
     def _get_price_from_company(self, item):
@@ -138,6 +139,24 @@ class WatchItemRefreshView(APIView):
             pass
         return None
 
+    def _get_high_price_1y_from_yfinance(self, code):
+        """yfinance から直近1年間の最高値を取得"""
+        try:
+            import yfinance as yf
+            ticker = yf.Ticker(f'{code}.T')
+            hist   = ticker.history(period='1y')
+
+            if hist.empty:
+                return None, None
+
+            # high_price = float(hist['High'].max())
+            high_price = round(float(hist['High'].max()), 2)
+            high_date  = hist['High'].idxmax().date()
+            return high_price, high_date
+
+        except Exception:
+            return None, None
+
     def post(self, request, watchlist_pk):
         watchlist = get_object_or_404(
             WatchList, pk=watchlist_pk, user=request.user
@@ -149,26 +168,38 @@ class WatchItemRefreshView(APIView):
         for item in items:
             code = item.company.code
 
-            # ① Company.stock から取得
+            # ── 現在株価の取得 ──────────────────
             price  = self._get_price_from_company(item)
             source = 'company'
 
-            # ② yfinance でフォールバック
             if price is None:
                 price  = self._get_price_from_yfinance(code)
                 source = 'yfinance'
 
+            # ── 直近1年最高値の取得 ──────────────
+            high_price, high_date = self._get_high_price_1y_from_yfinance(code)
+
             if price is not None:
                 item.current_price = price
-                item.save(update_fields=['current_price', 'updated_at'])
+                update_fields = ['current_price', 'updated_at']
+
+                if high_price is not None:
+                    item.high_price_1y    = high_price
+                    item.high_price_1y_at = high_date
+                    update_fields += ['high_price_1y', 'high_price_1y_at']
+
+                item.save(update_fields=update_fields)
                 item.update_alert_status()
+                item.update_high_alert_status()
+
                 updated.append({
-                    'code':   code,
-                    'price':  price,
-                    'source': source,
+                    'code':       code,
+                    'price':      price,
+                    'source':     source,
+                    'high_price': high_price,
+                    'high_date':  str(high_date) if high_date else None,
                 })
             else:
-                # ③ 取得失敗 → current_price は変更しない（手動入力可能）
                 errors.append({
                     'code':  code,
                     'error': '株価取得失敗。手動で入力してください。',

@@ -4,38 +4,36 @@ from api_market.models import Company
 
 
 class WatchItemSerializer(serializers.ModelSerializer):
-    company_code     = serializers.CharField(source='company.code', read_only=True)
-    company_name     = serializers.CharField(source='company.name', read_only=True)
-    company_industry = serializers.SerializerMethodField()
-    company_dividend = serializers.FloatField(source='company.dividend', read_only=True)
-    alert_label      = serializers.CharField(
-                           source='get_alert_status_display', read_only=True
-                       )
-    price_diff_pct   = serializers.FloatField(read_only=True)
-
-    # 登録時に銘柄コードで指定
+    company_code      = serializers.CharField(source='company.code', read_only=True)
+    company_name      = serializers.CharField(source='company.name', read_only=True)
+    alert_label       = serializers.CharField(
+                            source='get_alert_status_display', read_only=True
+                        )
+    high_alert_label  = serializers.CharField(
+                            source='get_high_alert_status_display', read_only=True
+                        )
+    price_diff_pct    = serializers.FloatField(read_only=True)
+    high_diff_pct     = serializers.FloatField(read_only=True)
     company_code_input = serializers.CharField(write_only=True, required=False)
 
     class Meta:
         model  = WatchItem
         fields = [
             'id',
-            'company_code', 'company_name', 'company_industry', 'company_dividend',
+            'company_code', 'company_name',
             'company_code_input',
             'target_price', 'current_price',
             'price_diff_pct',
             'alert_status', 'alert_label',
+            'high_price_1y', 'high_price_1y_at',
+            'high_diff_pct',
+            'high_alert_status', 'high_alert_label',
             'memo',
             'created_at', 'updated_at',
         ]
-
-    def get_company_industry(self, obj):
-        try:
-            return obj.company.information.industry
-        except Exception:
-            return None
         read_only_fields = [
-            'id', 'alert_status',
+            'id', 'alert_status', 'high_alert_status',
+            'high_price_1y', 'high_price_1y_at',
             'created_at', 'updated_at',
         ]
 
