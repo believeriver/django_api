@@ -1,5 +1,6 @@
 from django.urls import path, include
 from . import views
+from .views import CompanyDetailFetchView, CompanyDetailView
 from rest_framework.routers import DefaultRouter
 
 app_name = 'api_market'
@@ -27,4 +28,10 @@ Company API要件：
 urlpatterns = [
     path('', include(router.urls)),
     path('stock/<int:ticker>/', views.stock_price, name='stock-price'),
+    path('companies/<str:code>/fetch-detail/',
+         CompanyDetailFetchView.as_view(),
+         name='company-fetch-detail'),
+    path('companies/<str:code>/detail/',
+         CompanyDetailView.as_view(),
+         name='company-detail'),
 ]

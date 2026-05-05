@@ -7,18 +7,29 @@ import logging
 from django.db.models import Q
 from django.http import Http404
 from django.core.cache import cache          # ← 追加
+from django.conf import settings
+from django.utils import timezone
 
 from rest_framework import viewsets
 from rest_framework.decorators import action, api_view, permission_classes
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
+from rest_framework.views import APIView
+from rest_framework import status
+from django.shortcuts import get_object_or_404
+from rest_framework.permissions import IsAuthenticated
+
+import anthropic
+from anthropic.types import MessageParam
+
+from config.permissions import IsSuperUser
 
 logger = logging.getLogger(__name__)
 
 project_path = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, project_path)
 
-from api_market.models import Company, Financial
+from api_market.models import Company, Financial, CompanyDetail
 from api_market.serializers import CompanyListSerializer, CompanyDetailSerializer
 from api_market.management.import_stocks import fetch_stock_dataframe
 
@@ -149,3 +160,110 @@ def stock_price(request, ticker: int):
         return Response({'detail': str(e)}, status=500)
 
     return Response(data)
+
+
+# 2026.5.5 企業詳細APIに財務データも含めるため、CompanyDetailSerializerを作成してCompanyViewSetで切り替える。
+class CompanyDetailFetchView(APIView):
+    """Claude API で企業詳細情報を取得・保存"""
+    # permission_classes = [IsAuthenticated]
+    permission_classes = [IsSuperUser]
+
+    def post(self, request, code):
+        # 企業が存在するか確認
+        company = get_object_or_404(Company, code=code)
+
+        # Claude API を呼び出す
+        client = anthropic.Anthropic(api_key=settings.ANTHROPIC_API_KEY)
+
+        prompt = f"""
+以下の日本の上場企業について、投資家向けに詳細情報を提供してください。
+
+企業コード: {company.code}
+企業名: {company.name}
+
+以下の形式でJSON形式のみで回答してください。余分なテキストは不要です。
+
+{{
+    "summary": "企業の概要（100文字程度）",
+    "business": "主な事業内容（200文字程度）",
+    "feature": "企業の特徴・強み（200文字程度）",
+    "risk": "投資上のリスク・注意点（150文字程度）"
+}}
+"""
+
+        try:
+            message = client.messages.create(
+                model='claude-haiku-4-5-20251001',
+                max_tokens=1024,
+                messages=[
+                    MessageParam(role='user', content=prompt)
+                ],
+            )
+
+            import json
+            import re
+            content = message.content[0].text
+            content = re.sub(r'```json\s*', '', content)
+            content = re.sub(r'```\s*', '', content)
+            content = content.strip()
+            # print('=== Claude API レスポンス ===')  # ← 追加
+            # print(content)  # ← 追加
+            # print('============================')  # ← 追加
+            data    = json.loads(content)
+
+            # DBに保存
+            detail, _ = CompanyDetail.objects.update_or_create(
+                company=company,
+                defaults={
+                    'summary':    data.get('summary', ''),
+                    'business':   data.get('business', ''),
+                    'feature':    data.get('feature', ''),
+                    'risk':       data.get('risk', ''),
+                    'fetched_at': timezone.now(),
+                }
+            )
+
+            return Response({
+                'code':     company.code,
+                'name':     company.name,
+                'summary':  detail.summary,
+                'business': detail.business,
+                'feature':  detail.feature,
+                'risk':     detail.risk,
+                'fetched_at': detail.fetched_at,
+            }, status=status.HTTP_201_CREATED)
+
+        except json.JSONDecodeError:
+            return Response(
+                {'error': 'Claude APIのレスポンスが不正です'},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )
+        except Exception as e:
+            return Response(
+                {'error': str(e)},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )
+
+
+class CompanyDetailView(APIView):
+    """企業詳細情報の取得"""
+    permission_classes = [AllowAny]
+
+    def get(self, request, code):
+        company = get_object_or_404(Company, code=code)
+        try:
+            detail = company.detail
+            return Response({
+                'code':     company.code,
+                'name':     company.name,
+                'summary':  detail.summary,
+                'business': detail.business,
+                'feature':  detail.feature,
+                'risk':     detail.risk,
+                'fetched_at': detail.fetched_at,
+            })
+        except CompanyDetail.DoesNotExist:
+            return Response(
+                {'error': 'まだ詳細情報が取得されていません'},
+                status=status.HTTP_404_NOT_FOUND,
+            )

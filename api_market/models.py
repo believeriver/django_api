@@ -294,3 +294,23 @@ class Financial(models.Model):
                     'cash_and_equivalents', 'dividend_per_share',
                     'payout_ratio', 'fiscal_year')
         )
+
+
+class CompanyDetail(models.Model):
+    """企業詳細情報（Claude APIで生成）"""
+
+    company     = models.OneToOneField(
+                      Company,
+                      on_delete=models.CASCADE,
+                      related_name='detail',
+                  )
+    summary     = models.TextField(blank=True, default='')  # 概要
+    business    = models.TextField(blank=True, default='')  # 事業内容
+    feature     = models.TextField(blank=True, default='')  # 特徴・強み
+    risk        = models.TextField(blank=True, default='')  # リスク・注意点
+    fetched_at  = models.DateTimeField(null=True, blank=True)  # 取得日時
+    created_at  = models.DateTimeField(auto_now_add=True)
+    updated_at  = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f'{self.company.code} - {self.company.name}'

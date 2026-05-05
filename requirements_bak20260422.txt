@@ -69,6 +69,5 @@ websockets==15.0.1
 wsproto==1.2.0
 yfinance==1.2.0
 zipp==3.23.0
-psycopg2-binary==2.9.12
-gunicorn==23.0.0
-anthropic==0.98.1
+psycopg2-binary
+gunicorn

@@ -89,3 +89,6 @@ LOGGING = {
 # メール設定
 DEFAULT_FROM_EMAIL = env.str('DEFAULT_FROM_EMAIL', default='noreply@believeriver.site')
 ADMIN_EMAIL        = env.str('ADMIN_EMAIL', default='')
+
+# Claude APIキー(2025.05.05)
+ANTHROPIC_API_KEY = env.str('ANTHROPIC_API_KEY')

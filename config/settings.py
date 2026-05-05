@@ -316,4 +316,7 @@ ANALYTICS_SECURITY_PATHS = [
     '/api/auth/logout/',
 ]
 
+# Claude APIキー(2026.5.5)
+ANTHROPIC_API_KEY = env.str('ANTHROPIC_API_KEY', default='')
+
 # -----------------
