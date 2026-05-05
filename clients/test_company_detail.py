@@ -63,6 +63,8 @@ if __name__ == '__main__':
         print(f"  事業内容: {data['business']}")
         print(f"  特徴    : {data['feature']}")
         print(f"  リスク  : {data['risk']}")
+        print(f"  公式サイト: {data.get('website', 'なし')}")
+        print(f"  Wiki URL  : {data.get('wiki_url', 'なし')}")
         print(f"  取得日時: {data['fetched_at']}")
     else:
         print('エラー:', res.json())

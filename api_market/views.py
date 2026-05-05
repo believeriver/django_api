@@ -3,6 +3,8 @@ import os
 import sys
 import datetime
 import logging
+import re
+import json
 
 from django.db.models import Q
 from django.http import Http404
@@ -23,6 +25,7 @@ import anthropic
 from anthropic.types import MessageParam
 
 from config.permissions import IsSuperUser
+from .utils.wikipedia import fetch_wikipedia_info
 
 logger = logging.getLogger(__name__)
 
@@ -164,32 +167,43 @@ def stock_price(request, ticker: int):
 
 # 2026.5.5 企業詳細APIに財務データも含めるため、CompanyDetailSerializerを作成してCompanyViewSetで切り替える。
 class CompanyDetailFetchView(APIView):
-    """Claude API で企業詳細情報を取得・保存"""
-    # permission_classes = [IsAuthenticated]
+    """Claude API + Wikipedia で企業詳細情報を取得・保存"""
     permission_classes = [IsSuperUser]
 
     def post(self, request, code):
-        # 企業が存在するか確認
         company = get_object_or_404(Company, code=code)
 
-        # Claude API を呼び出す
+        # ── ① Wikipedia から情報取得 ──────────
+        wiki = fetch_wikipedia_info(company.name)
+        extract = wiki.get('extract', '')
+        website = wiki.get('website', '')
+
+        if not extract:
+            wiki_context = f'企業名: {company.name}（コード: {company.code}）\n※Wikipedia情報なし'
+        else:
+            wiki_context = f'企業名: {company.name}（コード: {company.code}）\n\n{extract}'
+
+        # ── ② Claude API で整形 ───────────────
         client = anthropic.Anthropic(api_key=settings.ANTHROPIC_API_KEY)
 
         prompt = f"""
-以下の日本の上場企業について、投資家向けに詳細情報を提供してください。
+        以下のWikipedia情報を元に、日本の上場企業の投資家向け情報をまとめてください。
 
-企業コード: {company.code}
-企業名: {company.name}
+        {wiki_context}
 
-以下の形式でJSON形式のみで回答してください。余分なテキストは不要です。
+        以下のルールに従ってJSON形式のみで回答してください。
+        - Wikipedia情報を最大限活用すること
+        - Wikipedia情報から推測できる内容は含めてよい
+        - 全く根拠のない情報は含めないこと
+        - 情報が全くない場合のみ「情報不足」と記載すること
 
-{{
-    "summary": "企業の概要（100文字程度）",
-    "business": "主な事業内容（200文字程度）",
-    "feature": "企業の特徴・強み（200文字程度）",
-    "risk": "投資上のリスク・注意点（150文字程度）"
-}}
-"""
+        {{
+            "summary": "企業の概要（100文字程度）",
+            "business": "主な事業内容（200文字程度）",
+            "feature": "企業の特徴・強み（200文字程度）",
+            "risk": "投資上のリスク・注意点（150文字程度）"
+        }}
+        """
 
         try:
             message = client.messages.create(
@@ -200,18 +214,18 @@ class CompanyDetailFetchView(APIView):
                 ],
             )
 
-            import json
-            import re
             content = message.content[0].text
             content = re.sub(r'```json\s*', '', content)
             content = re.sub(r'```\s*', '', content)
+
+            # JSONブロックのみを抽出
+            match = re.search(r'\{.*?\}', content, re.DOTALL)
+            if match:
+                content = match.group(0)
             content = content.strip()
-            # print('=== Claude API レスポンス ===')  # ← 追加
-            # print(content)  # ← 追加
-            # print('============================')  # ← 追加
             data    = json.loads(content)
 
-            # DBに保存
+            # ── ③ DBに保存 ────────────────────
             detail, _ = CompanyDetail.objects.update_or_create(
                 company=company,
                 defaults={
@@ -219,26 +233,36 @@ class CompanyDetailFetchView(APIView):
                     'business':   data.get('business', ''),
                     'feature':    data.get('feature', ''),
                     'risk':       data.get('risk', ''),
+                    'website':    website,
                     'fetched_at': timezone.now(),
                 }
             )
 
             return Response({
-                'code':     company.code,
-                'name':     company.name,
-                'summary':  detail.summary,
-                'business': detail.business,
-                'feature':  detail.feature,
-                'risk':     detail.risk,
+                'code':      company.code,
+                'name':      company.name,
+                'summary':   detail.summary,
+                'business':  detail.business,
+                'feature':   detail.feature,
+                'risk':      detail.risk,
+                'website':   detail.website,
+                'wiki_url':  wiki.get('url', ''),
                 'fetched_at': detail.fetched_at,
             }, status=status.HTTP_201_CREATED)
 
         except json.JSONDecodeError:
+            import traceback
+            print('=== JSONDecodeError ===')
+            print(traceback.format_exc())
+            print('content:', content)
             return Response(
                 {'error': 'Claude APIのレスポンスが不正です'},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
         except Exception as e:
+            import traceback
+            print('=== Exception ===')
+            print(traceback.format_exc())
             return Response(
                 {'error': str(e)},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -254,12 +278,13 @@ class CompanyDetailView(APIView):
         try:
             detail = company.detail
             return Response({
-                'code':     company.code,
-                'name':     company.name,
-                'summary':  detail.summary,
-                'business': detail.business,
-                'feature':  detail.feature,
-                'risk':     detail.risk,
+                'code':      company.code,
+                'name':      company.name,
+                'summary':   detail.summary,
+                'business':  detail.business,
+                'feature':   detail.feature,
+                'risk':      detail.risk,
+                'website':   detail.website,
                 'fetched_at': detail.fetched_at,
             })
         except CompanyDetail.DoesNotExist:
