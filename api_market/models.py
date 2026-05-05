@@ -308,6 +308,7 @@ class CompanyDetail(models.Model):
     business    = models.TextField(blank=True, default='')  # 事業内容
     feature     = models.TextField(blank=True, default='')  # 特徴・強み
     risk        = models.TextField(blank=True, default='')  # リスク・注意点
+    website = models.URLField(blank=True, default='')
     fetched_at  = models.DateTimeField(null=True, blank=True)  # 取得日時
     created_at  = models.DateTimeField(auto_now_add=True)
     updated_at  = models.DateTimeField(auto_now=True)
