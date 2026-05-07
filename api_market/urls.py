@@ -1,6 +1,6 @@
 from django.urls import path, include
 from . import views
-from .views import CompanyDetailFetchView, CompanyDetailView
+from .views import CompanyDetailFetchView, CompanyDetailView, ScreeningView
 from rest_framework.routers import DefaultRouter
 
 app_name = 'api_market'
@@ -34,4 +34,5 @@ urlpatterns = [
     path('companies/<str:code>/detail/',
          CompanyDetailView.as_view(),
          name='company-detail'),
+    path('screening/', ScreeningView.as_view(), name='screening'),
 ]

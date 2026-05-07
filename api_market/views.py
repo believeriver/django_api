@@ -26,6 +26,7 @@ from anthropic.types import MessageParam
 
 from config.permissions import IsSuperUser
 from .utils.wikipedia import fetch_wikipedia_info
+from .screening import run_screening
 
 logger = logging.getLogger(__name__)
 
@@ -292,3 +293,26 @@ class CompanyDetailView(APIView):
                 {'error': 'まだ詳細情報が取得されていません'},
                 status=status.HTTP_404_NOT_FOUND,
             )
+
+
+# 2026.5.8
+class ScreeningView(APIView):
+    """銘柄スクリーニング"""
+    permission_classes = [AllowAny]
+
+    def post(self, request):
+        data = request.data
+
+        results = run_screening(
+            eps_no_negative      = data.get('eps_no_negative', True),
+            dividend_no_zero     = data.get('dividend_no_zero', True),
+            operating_margin_min = data.get('operating_margin_min', None),
+            equity_ratio_min     = data.get('equity_ratio_min', None),
+            sort_by              = data.get('sort_by', 'score'),
+        )
+
+        return Response({
+            'count':      len(results),
+            'conditions': data,
+            'results':    results,
+        })
