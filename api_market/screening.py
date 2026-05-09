@@ -231,11 +231,12 @@ def analyze_company(financials: list) -> dict:
 def run_screening(
     eps_no_negative:      bool  = True,
     dividend_no_zero:     bool  = True,
-    operating_margin_min: float = 8.0,    # ← デフォルト8.0
-    equity_ratio_min:     float = 40.0,   # ← デフォルト40.0
+    operating_margin_min: float = 8.0,
+    equity_ratio_min:     float = 40.0,
+    dividend_yield_min:   float = 3.0,    # ← 追加
     min_years:            int   = None,
     exclude_reit:         bool  = False,
-    sort_by:              str   = 'score', # ← デフォルト'score'
+    sort_by:              str   = 'score',
 ) -> list:
     """
     スクリーニングを実行して結果を返す
@@ -269,6 +270,12 @@ def run_screening(
             if any(word in name for word in [
                 '投資法人', 'リート', 'REIT', 'リートインベスト'
             ]):
+                continue
+
+        # ── 配当利回りフィルタ ────────────
+        if dividend_yield_min is not None:
+            div_yield = company.dividend
+            if div_yield is None or div_yield < dividend_yield_min:
                 continue
 
         analysis = analyze_company(financials)
