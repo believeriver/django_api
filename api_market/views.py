@@ -114,7 +114,8 @@ class CompanyViewSet(viewsets.ReadOnlyModelViewSet):
 
 @api_view(['GET'])
 @permission_classes([AllowAny])
-def stock_price(request, ticker: int):
+#def stock_price(request, ticker: int):
+def stock_price(request, ticker: str):
     """
     株価データを返す。キャッシュ有効期限: 15分。
 

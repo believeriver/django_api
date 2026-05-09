@@ -41,22 +41,20 @@ class JapanStockModel(object):
         self._duration = 30
 
     @staticmethod
-    def fetch_by_yfinance(ticker: int, start: str, end: str) -> pd.DataFrame:
+    def fetch_by_yfinance(ticker: str, start: str, end: str) -> pd.DataFrame:
         symbol = f"{ticker}.T"
         try:
-            time.sleep(1.0)  # レート制限回避のため控えめに
-            df = yf.download(symbol, start=start, end=end, progress=False, threads=False)
+            time.sleep(1.0)
+            hist = yf.Ticker(symbol).history(start=start, end=end)
         except Exception as e:
             raise DataSourceError(f"yfinance failed: {symbol}: {e}")
-
-        if df.empty:
+        if hist.empty:
             raise DataSourceError(f"yfinance returned empty dataframe: {symbol}")
-
-        if "Close" not in df.columns:
+        if "Close" not in hist.columns:
             raise DataSourceError(
-                f"yfinance missing Close column: {symbol}, columns={list(df.columns)}"
+                f"yfinance missing Close column: {symbol}, columns={list(hist.columns)}"
             )
-        return df
+        return hist
 
     @staticmethod
     def fetch_japan_stock_by_pdr_stooq(

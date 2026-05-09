@@ -42,7 +42,7 @@ POST /api/market/screening/refresh/  再実行してDB保存（superuserのみ�
 
 urlpatterns = [
     path('', include(router.urls)),
-    path('stock/<int:ticker>/', views.stock_price, name='stock-price'),
+    path('stock/<str:ticker>/', views.stock_price, name='stock-price'),
     path('companies/<str:code>/fetch-detail/',
          CompanyDetailFetchView.as_view(),
          name='company-fetch-detail'),
