@@ -66,3 +66,29 @@ if __name__ == '__main__':
             f"スコア:{r['score']:3d} "
             f"配当利回り:{r['dividend']}%"
         )
+
+    # clients/test_screening.py
+
+    # ── リート除外・最低5年 ───────────────
+    print_section('スクリーニング（リート除外・5年以上・スコア順）')
+    res = requests.post(f'{BASE_URL}api/market/screening/', json={
+        'exclude_reit': True,
+        'min_years': 5,
+        'sort_by': 'score',
+    })
+    data = res.json()
+    print(f'該当銘柄数: {data["count"]}件')
+    for r in data['results'][:10]:
+        print(
+            f"  [{r['code']}] {r['name'][:20]:<20} "
+            f"スコア:{r['score']:3d} "
+            f"配当利回り:{r['dividend']}% "
+            f"分析年数:{r['years_analyzed']}年"
+        )
+
+    # ── デフォルト条件（何も指定しない）────
+    print_section('スクリーニング（デフォルト条件）')
+    res = requests.post(f'{BASE_URL}api/market/screening/', json={})
+    data = res.json()
+    print(f'条件: {data["conditions"]}')
+    print(f'該当銘柄数: {data["count"]}件')

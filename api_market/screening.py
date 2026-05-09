@@ -229,19 +229,21 @@ def analyze_company(financials: list) -> dict:
 
 
 def run_screening(
-    eps_no_negative: bool   = True,
-    dividend_no_zero: bool  = True,
-    operating_margin_min: float = None,
-    equity_ratio_min: float = None,
-    sort_by: str            = 'score',  # 'score' or 'dividend'
+    eps_no_negative:      bool  = True,
+    dividend_no_zero:     bool  = True,
+    operating_margin_min: float = 8.0,    # ← デフォルト8.0
+    equity_ratio_min:     float = 40.0,   # ← デフォルト40.0
+    min_years:            int   = None,
+    exclude_reit:         bool  = False,
+    sort_by:              str   = 'score', # ← デフォルト'score'
 ) -> list:
     """
     スクリーニングを実行して結果を返す
+    ver 2026.5.9
 
     sort_by: 'score' → スコア降順
              'dividend' → 配当利回り降順
     """
-    # 全企業の財務データを取得
     companies = Company.objects.prefetch_related(
         Prefetch(
             'financials',
@@ -257,6 +259,18 @@ def run_screening(
         if not financials:
             continue
 
+        # ── 最低分析年数フィルタ ──────────
+        if min_years is not None and len(financials) < min_years:
+            continue
+
+        # ── リート除外 ────────────────────
+        if exclude_reit:
+            name = company.name
+            if any(word in name for word in [
+                '投資法人', 'リート', 'REIT', 'リートインベスト'
+            ]):
+                continue
+
         analysis = analyze_company(financials)
         if not analysis:
             continue
@@ -264,21 +278,17 @@ def run_screening(
         details = analysis['details']
 
         # ── 必須フィルタ ──────────────────
-        # EPSマイナス除外
         if eps_no_negative and details.get('eps_no_negative') is False:
             continue
 
-        # 無配除外
         if dividend_no_zero and details.get('dividend_stable') is False:
             continue
 
-        # 営業利益率の最低条件
         if operating_margin_min is not None:
             val = details.get('operating_margin_val')
             if val is None or val < operating_margin_min:
                 continue
 
-        # 自己資本比率の最低条件
         if equity_ratio_min is not None:
             val = details.get('equity_ratio_val')
             if val is None or val < equity_ratio_min:

@@ -295,7 +295,7 @@ class CompanyDetailView(APIView):
             )
 
 
-# 2026.5.8
+# 2026.5.9
 class ScreeningView(APIView):
     """銘柄スクリーニング"""
     permission_classes = [AllowAny]
@@ -306,13 +306,23 @@ class ScreeningView(APIView):
         results = run_screening(
             eps_no_negative      = data.get('eps_no_negative', True),
             dividend_no_zero     = data.get('dividend_no_zero', True),
-            operating_margin_min = data.get('operating_margin_min', None),
-            equity_ratio_min     = data.get('equity_ratio_min', None),
+            operating_margin_min = data.get('operating_margin_min', 8.0),
+            equity_ratio_min     = data.get('equity_ratio_min', 40.0),
+            min_years            = data.get('min_years', None),
+            exclude_reit         = data.get('exclude_reit', False),
             sort_by              = data.get('sort_by', 'score'),
         )
 
         return Response({
             'count':      len(results),
-            'conditions': data,
-            'results':    results,
+            'conditions': {
+                'eps_no_negative':      data.get('eps_no_negative', True),
+                'dividend_no_zero':     data.get('dividend_no_zero', True),
+                'operating_margin_min': data.get('operating_margin_min', 8.0),
+                'equity_ratio_min':     data.get('equity_ratio_min', 40.0),
+                'min_years':            data.get('min_years', None),
+                'exclude_reit':         data.get('exclude_reit', False),
+                'sort_by':              data.get('sort_by', 'score'),
+            },
+            'results': results,
         })
