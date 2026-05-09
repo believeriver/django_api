@@ -24,6 +24,29 @@ Company API要件：
   /api/market/stock/7203/                       -> start は「今日から1年前」
   /api/market/stock/7203/?start=2020-01-01     -> 指定された start を優先
 """
+"""
+2026-01-01 以降の財務データを分析対象とするスクリーニング API
+  POST /api/market/screening/
+  認証: 不要
+  const response = await fetch('/api/market/screening/', {
+  method: 'POST',
+  headers: {
+    'Content-Type': 'application/json',
+  },
+  body: JSON.stringify({
+    eps_no_negative:      true,
+    dividend_no_zero:     true,
+    operating_margin_min: 8.0,
+    equity_ratio_min:     40.0,
+    dividend_yield_min:   3.0,
+    min_years:            null,
+    exclude_reit:         false,
+    sort_by:              'score',  // 'score' or 'dividend'
+  }),
+});
+const data = await response.json();
+
+"""
 
 urlpatterns = [
     path('', include(router.urls)),
