@@ -24,9 +24,10 @@ from rest_framework.permissions import IsAuthenticated
 import anthropic
 from anthropic.types import MessageParam
 
-from config.permissions import IsSuperUser
 from .utils.wikipedia import fetch_wikipedia_info
-from .screening import run_screening
+from .models import ScreeningResult, ScreeningMeta
+from .screening import run_screening, save_screening_results
+from config.permissions import IsSuperUser
 
 logger = logging.getLogger(__name__)
 
@@ -296,35 +297,122 @@ class CompanyDetailView(APIView):
 
 
 # 2026.5.9
+# api_market/views.py
 class ScreeningView(APIView):
-    """銘柄スクリーニング"""
+    """DBからスクリーニング結果を取得（認証不要）"""
     permission_classes = [AllowAny]
 
-    def post(self, request):
-        data = request.data
+    def get(self, request):
+        # ソート
+        sort_by = request.query_params.get('sort_by', 'score')
 
-        results = run_screening(
-            eps_no_negative      = data.get('eps_no_negative', True),
-            dividend_no_zero     = data.get('dividend_no_zero', True),
-            operating_margin_min = data.get('operating_margin_min', 8.0),
-            equity_ratio_min     = data.get('equity_ratio_min', 40.0),
-            dividend_yield_min   = data.get('dividend_yield_min', 3.0),
-            min_years            = data.get('min_years', None),
-            exclude_reit         = data.get('exclude_reit', False),
-            sort_by              = data.get('sort_by', 'score'),
-        )
+        # フィルタ
+        exclude_reit       = request.query_params.get('exclude_reit', 'false') == 'true'
+        dividend_yield_min = float(request.query_params.get('dividend_yield_min', 0))
+        equity_ratio_min   = float(request.query_params.get('equity_ratio_min', 0))
+        operating_margin_min = float(request.query_params.get('operating_margin_min', 0))
+        min_years          = request.query_params.get('min_years', None)
+        if min_years:
+            min_years = int(min_years)
+
+        qs = ScreeningResult.objects.select_related('company')
+
+        # フィルタ適用
+        if exclude_reit:
+            qs = qs.exclude(company__name__contains='投資法人')
+        if dividend_yield_min > 0:
+            qs = qs.filter(company__dividend__gte=dividend_yield_min)
+        if equity_ratio_min > 0:
+            qs = qs.filter(equity_ratio_val__gte=equity_ratio_min)
+        if operating_margin_min > 0:
+            qs = qs.filter(operating_margin_val__gte=operating_margin_min)
+        if min_years:
+            qs = qs.filter(years_analyzed__gte=min_years)
+
+        # ソート
+        if sort_by == 'dividend':
+            qs = qs.order_by('-company__dividend')
+        else:
+            qs = qs.order_by('-score')
+
+        # メタ情報
+        meta = ScreeningMeta.objects.first()
+        refreshed_at = meta.refreshed_at if meta else None
+
+        results = []
+        for r in qs:
+            results.append({
+                'code':           r.company.code,
+                'name':           r.company.name,
+                'dividend':       r.company.dividend,
+                'score':          r.score,
+                'years_analyzed': r.years_analyzed,
+                'details': {
+                    'sales_growth':         r.sales_growth,
+                    'sales_stable':         r.sales_stable,
+                    'operating_margin_ok':  r.operating_margin_ok,
+                    'operating_margin_10':  r.operating_margin_10,
+                    'operating_margin_val': r.operating_margin_val,
+                    'eps_no_negative':      r.eps_no_negative,
+                    'eps_growth':           r.eps_growth,
+                    'eps_val':              r.eps_val,
+                    'equity_ratio_40':      r.equity_ratio_40,
+                    'equity_ratio_60':      r.equity_ratio_60,
+                    'equity_ratio_80':      r.equity_ratio_80,
+                    'equity_ratio_val':     r.equity_ratio_val,
+                    'cf_positive':          r.cf_positive,
+                    'cf_growth':            r.cf_growth,
+                    'cf_val':               r.cf_val,
+                    'cash_growth':          r.cash_growth,
+                    'cash_val':             r.cash_val,
+                    'dividend_stable':      r.dividend_stable,
+                    'dividend_growth':      r.dividend_growth,
+                    'dividend_val':         r.dividend_val,
+                    'payout_ratio_ok':      r.payout_ratio_ok,
+                    'payout_ratio_high':    r.payout_ratio_high,
+                    'payout_ratio_val':     r.payout_ratio_val,
+                },
+                'latest': {
+                    'fiscal_year':           r.latest_fiscal_year,
+                    'sales':                 r.latest_sales,
+                    'operating_margin':      r.latest_operating_margin,
+                    'eps':                   r.latest_eps,
+                    'equity_ratio':          r.latest_equity_ratio,
+                    'operating_cash_flow':   r.latest_operating_cash_flow,
+                    'cash_and_equivalents':  r.latest_cash_and_equivalents,
+                    'dividend_per_share':    r.latest_dividend_per_share,
+                    'payout_ratio':          r.latest_payout_ratio,
+                },
+            })
 
         return Response({
-            'count':      len(results),
-            'conditions': {
-                'eps_no_negative':      data.get('eps_no_negative', True),
-                'dividend_no_zero':     data.get('dividend_no_zero', True),
-                'operating_margin_min': data.get('operating_margin_min', 8.0),
-                'equity_ratio_min':     data.get('equity_ratio_min', 40.0),
-                'dividend_yield_min':   data.get('dividend_yield_min', 3.0),
-                'min_years':            data.get('min_years', None),
-                'exclude_reit':         data.get('exclude_reit', False),
-                'sort_by':              data.get('sort_by', 'score'),
-            },
-            'results': results,
+            'count':        len(results),
+            'refreshed_at': refreshed_at,
+            'results':      results,
+        })
+
+
+class ScreeningRefreshView(APIView):
+    """スクリーニングを実行してDBに保存（superuserのみ）"""
+    permission_classes = [IsSuperUser]
+
+    def post(self, request):
+        # 全銘柄対象でスクリーニング実行（条件なし）
+        results = run_screening(
+            eps_no_negative      = False,
+            dividend_no_zero     = False,
+            operating_margin_min = None,
+            equity_ratio_min     = None,
+            dividend_yield_min   = None,
+            min_years            = None,
+            exclude_reit         = False,
+            sort_by              = 'score',
+        )
+
+        count = save_screening_results(results, user=request.user)
+
+        return Response({
+            'message':      f'{count}件のスクリーニング結果を保存しました',
+            'count':        count,
+            'refreshed_at': ScreeningMeta.objects.first().refreshed_at,
         })

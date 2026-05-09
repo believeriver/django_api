@@ -1,6 +1,7 @@
 from django.urls import path, include
 from . import views
-from .views import CompanyDetailFetchView, CompanyDetailView, ScreeningView
+from .views import CompanyDetailFetchView, CompanyDetailView
+from .views import ScreeningView, ScreeningRefreshView
 from rest_framework.routers import DefaultRouter
 
 app_name = 'api_market'
@@ -26,25 +27,16 @@ Company API要件：
 """
 """
 2026-01-01 以降の財務データを分析対象とするスクリーニング API
-  POST /api/market/screening/
-  認証: 不要
-  const response = await fetch('/api/market/screening/', {
-  method: 'POST',
-  headers: {
-    'Content-Type': 'application/json',
-  },
-  body: JSON.stringify({
-    eps_no_negative:      true,
-    dividend_no_zero:     true,
-    operating_margin_min: 8.0,
-    equity_ratio_min:     40.0,
-    dividend_yield_min:   3.0,
-    min_years:            null,
-    exclude_reit:         false,
-    sort_by:              'score',  // 'score' or 'dividend'
-  }),
-});
-const data = await response.json();
+GET  /api/market/screening/          DBから取得（認証不要・高速）
+    クエリパラメータ
+        sort_by=score|dividend
+        exclude_reit=true|false
+        dividend_yield_min=3.0
+        equity_ratio_min=40.0
+        operating_margin_min=8.0
+        min_years=5
+
+POST /api/market/screening/refresh/  再実行してDB保存（superuserのみ）
 
 """
 
@@ -58,4 +50,5 @@ urlpatterns = [
          CompanyDetailView.as_view(),
          name='company-detail'),
     path('screening/', ScreeningView.as_view(), name='screening'),
+    path('screening/refresh/', ScreeningRefreshView.as_view(), name='screening-refresh'),
 ]

@@ -1,4 +1,5 @@
 from django.db import models, transaction
+from django.conf import settings
 from typing import List, Dict, Optional, Tuple
 # import json
 import logging
@@ -315,3 +316,77 @@ class CompanyDetail(models.Model):
 
     def __str__(self):
         return f'{self.company.code} - {self.company.name}'
+
+
+# 2026.05.09 api_market/models.py に追加
+class ScreeningResult(models.Model):
+    """スクリーニング結果のスナップショット"""
+
+    company        = models.ForeignKey(
+                         Company,
+                         on_delete=models.CASCADE,
+                         related_name='screening_results',
+                     )
+    score          = models.IntegerField(default=0)
+    years_analyzed = models.IntegerField(default=0)
+
+    # 詳細フラグ
+    sales_growth         = models.BooleanField(null=True, blank=True)
+    sales_stable         = models.BooleanField(null=True, blank=True)
+    operating_margin_ok  = models.BooleanField(null=True, blank=True)
+    operating_margin_10  = models.BooleanField(null=True, blank=True)
+    operating_margin_val = models.FloatField(null=True, blank=True)
+    eps_no_negative      = models.BooleanField(null=True, blank=True)
+    eps_growth           = models.BooleanField(null=True, blank=True)
+    eps_val              = models.FloatField(null=True, blank=True)
+    equity_ratio_40      = models.BooleanField(null=True, blank=True)
+    equity_ratio_60      = models.BooleanField(null=True, blank=True)
+    equity_ratio_80      = models.BooleanField(null=True, blank=True)
+    equity_ratio_val     = models.FloatField(null=True, blank=True)
+    cf_positive          = models.BooleanField(null=True, blank=True)
+    cf_growth            = models.BooleanField(null=True, blank=True)
+    cf_val               = models.BigIntegerField(null=True, blank=True)
+    cash_growth          = models.BooleanField(null=True, blank=True)
+    cash_val             = models.BigIntegerField(null=True, blank=True)
+    dividend_stable      = models.BooleanField(null=True, blank=True)
+    dividend_growth      = models.BooleanField(null=True, blank=True)
+    dividend_val         = models.BigIntegerField(null=True, blank=True)
+    payout_ratio_ok      = models.BooleanField(null=True, blank=True)
+    payout_ratio_high    = models.BooleanField(null=True, blank=True)
+    payout_ratio_val     = models.FloatField(null=True, blank=True)
+
+    # 最新財務データ
+    latest_fiscal_year        = models.CharField(max_length=16, blank=True, default='')
+    latest_sales              = models.FloatField(null=True, blank=True)
+    latest_operating_margin   = models.FloatField(null=True, blank=True)
+    latest_eps                = models.FloatField(null=True, blank=True)
+    latest_equity_ratio       = models.FloatField(null=True, blank=True)
+    latest_operating_cash_flow = models.BigIntegerField(null=True, blank=True)
+    latest_cash_and_equivalents = models.BigIntegerField(null=True, blank=True)
+    latest_dividend_per_share  = models.BigIntegerField(null=True, blank=True)
+    latest_payout_ratio        = models.FloatField(null=True, blank=True)
+
+    refreshed_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['-score']
+
+    def __str__(self):
+        return f'{self.company.code} - score:{self.score}'
+
+
+class ScreeningMeta(models.Model):
+    """スクリーニング実行日時の管理"""
+    refreshed_at = models.DateTimeField(auto_now=True)
+    refreshed_by = models.ForeignKey(
+                       settings.AUTH_USER_MODEL,
+                       on_delete=models.SET_NULL,
+                       null=True, blank=True,
+                   )
+    total_count  = models.IntegerField(default=0)
+
+    class Meta:
+        ordering = ['-refreshed_at']
+
+    def __str__(self):
+        return f'Screening at {self.refreshed_at}'

@@ -2,6 +2,7 @@
 from django.db.models import Prefetch
 from .models import Company, Financial
 import re
+from django.utils import timezone
 
 
 def to_float(value) -> float or None:
@@ -321,3 +322,72 @@ def run_screening(
         results.sort(key=lambda x: x['score'], reverse=True)
 
     return results
+
+
+# 2026.05.09 api_market/screening.py に追加
+def save_screening_results(results: list, user=None):
+    """スクリーニング結果をDBに保存"""
+    from .models import ScreeningResult, ScreeningMeta, Company
+
+    # 既存の結果を全削除
+    ScreeningResult.objects.all().delete()
+
+    # 新しい結果を一括保存
+    bulk_list = []
+    for r in results:
+        try:
+            company  = Company.objects.get(code=r['code'])
+            details  = r['details']
+            latest   = r['latest']
+
+            bulk_list.append(ScreeningResult(
+                company        = company,
+                score          = r['score'],
+                years_analyzed = r['years_analyzed'],
+
+                sales_growth         = details.get('sales_growth'),
+                sales_stable         = details.get('sales_stable'),
+                operating_margin_ok  = details.get('operating_margin_ok'),
+                operating_margin_10  = details.get('operating_margin_10'),
+                operating_margin_val = details.get('operating_margin_val'),
+                eps_no_negative      = details.get('eps_no_negative'),
+                eps_growth           = details.get('eps_growth'),
+                eps_val              = details.get('eps_val'),
+                equity_ratio_40      = details.get('equity_ratio_40'),
+                equity_ratio_60      = details.get('equity_ratio_60'),
+                equity_ratio_80      = details.get('equity_ratio_80'),
+                equity_ratio_val     = details.get('equity_ratio_val'),
+                cf_positive          = details.get('cf_positive'),
+                cf_growth            = details.get('cf_growth'),
+                cf_val               = details.get('cf_val'),
+                cash_growth          = details.get('cash_growth'),
+                cash_val             = details.get('cash_val'),
+                dividend_stable      = details.get('dividend_stable'),
+                dividend_growth      = details.get('dividend_growth'),
+                dividend_val         = details.get('dividend_val'),
+                payout_ratio_ok      = details.get('payout_ratio_ok'),
+                payout_ratio_high    = details.get('payout_ratio_high'),
+                payout_ratio_val     = details.get('payout_ratio_val'),
+
+                latest_fiscal_year         = latest.get('fiscal_year', ''),
+                latest_sales               = latest.get('sales'),
+                latest_operating_margin    = latest.get('operating_margin'),
+                latest_eps                 = latest.get('eps'),
+                latest_equity_ratio        = latest.get('equity_ratio'),
+                latest_operating_cash_flow = latest.get('operating_cash_flow'),
+                latest_cash_and_equivalents = latest.get('cash_and_equivalents'),
+                latest_dividend_per_share  = latest.get('dividend_per_share'),
+                latest_payout_ratio        = latest.get('payout_ratio'),
+            ))
+        except Company.DoesNotExist:
+            continue
+
+    ScreeningResult.objects.bulk_create(bulk_list)
+
+    # メタ情報を保存
+    ScreeningMeta.objects.create(
+        refreshed_by = user,
+        total_count  = len(bulk_list),
+    )
+
+    return len(bulk_list)
